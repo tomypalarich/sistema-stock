@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistema de Stock y Precios</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <h1>📦 Sistema de Stock y Precios</h1>
+
+    <!-- DASHBOARD -->
+    <div id="dashboard"></div>
+
+    <!-- BOTONES DE ACCION -->
+    <div style="margin:10px;">
+        <button onclick="sortByPrice()">Ordenar por Precio</button>
+        <button onclick="sortByStock()">Ordenar por Stock</button>
+        <button onclick="exportToExcel()">Exportar a Excel</button>
+        <button onclick="clearAll()" style="background: linear-gradient(135deg, #e74c3c, #c0392b);">Borrar Todo</button>
+    </div>
+
+    <!-- BUSCADOR -->
+    <input type="text" id="searchBox" placeholder="Buscar producto o categoría..." onkeyup="searchProduct()">
+
+    <!-- FORMULARIO -->
+    <div class="container">
+        <h2 id="formTitle">Agregar Producto</h2>
+        <input type="text" id="productName" placeholder="Nombre del producto">
+        <input type="number" id="productPriceSale" placeholder="Precio de venta ($)" min="0" step="0.01">
+        <input type="number" id="productPriceCost" placeholder="Precio de costo ($)" min="0" step="0.01">
+        <input type="number" id="productQuantity" placeholder="Cantidad en stock" min="0">
+        <input type="number" id="productMinStock" placeholder="Stock mínimo (alerta)" min="0">
+        <input type="text" id="productCategory" placeholder="Categoría (ej: Almacén, Bebidas)">
+        <button onclick="addProduct()">Agregar / Actualizar Producto</button>
+        <button onclick="cancelEdit()" id="btnCancelar" style="display:none; background: linear-gradient(135deg, #95a5a6, #7f8c8d);">Cancelar</button>
+    </div>
+
+    <!-- LISTA DE PRODUCTOS -->
+    <div id="productList"></div>
+
+    <script src="script.js"></script>
+</body>
+</html>
