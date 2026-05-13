@@ -161,6 +161,7 @@ function searchProduct() {
     displayProducts(products.filter(p =>
         p.name.toLowerCase().includes(q) || p.category.toLowerCase().includes(q)));
 }
+function sortByName()  { products.sort((a,b) => a.name.localeCompare(b.name, 'es')); saveData(); refreshUI(); }
 function sortByPrice() { products.sort((a,b) => a.priceSale - b.priceSale); saveData(); refreshUI(); }
 function sortByStock() { products.sort((a,b) => a.quantity - b.quantity);   saveData(); refreshUI(); }
 function clearAll() {

@@ -140,8 +140,7 @@ button:hover { background: var(--accent2); transform: translateY(-1px); box-shad
 /* ===== TABLA DE PRODUCTOS ===== */
 .tabla-wrapper {
     overflow-x: auto;
-    margin: 16px auto;
-    max-width: 960px;
+    margin: 16px 10px;
     border-radius: 10px;
     border: 1px solid var(--border);
 }
