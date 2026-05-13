@@ -451,5 +451,7 @@ function refreshUI() {
 }
 window.onload = function () {
     refreshUI();
-    renderCarrito();
+    if (document.getElementById("carritoLista")) {
+        renderCarrito();
+    }
 };
