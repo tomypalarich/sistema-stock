@@ -3,42 +3,111 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sistema de Stock y Precios</title>
+    <title>Sistema de Stock</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <h1>📦 Sistema de Stock y Precios</h1>
 
-    <!-- DASHBOARD -->
-    <div id="dashboard"></div>
-
-    <!-- BOTONES DE ACCION -->
-    <div style="margin:10px;">
-        <button onclick="sortByPrice()">Ordenar por Precio</button>
-        <button onclick="sortByStock()">Ordenar por Stock</button>
-        <button onclick="exportToExcel()">Exportar a Excel</button>
-        <button onclick="clearAll()" style="background: linear-gradient(135deg, #e74c3c, #c0392b);">Borrar Todo</button>
+<header>
+    <div class="header-inner">
+        <div class="header-title">
+            <span class="header-icon">▦</span>
+            <h1>Sistema de Stock</h1>
+        </div>
+        <div class="header-actions">
+            <button class="btn-secondary" onclick="exportToExcel()">↓ Exportar CSV</button>
+            <button class="btn-danger-sm" onclick="clearAll()">✕ Borrar todo</button>
+        </div>
     </div>
+</header>
 
-    <!-- BUSCADOR -->
-    <input type="text" id="searchBox" placeholder="Buscar producto o categoría..." onkeyup="searchProduct()">
+<!-- DASHBOARD -->
+<div id="dashboard" class="dashboard"></div>
 
-    <!-- FORMULARIO -->
-    <div class="container">
-        <h2 id="formTitle">Agregar Producto</h2>
-        <input type="text" id="productName" placeholder="Nombre del producto">
-        <input type="number" id="productPriceSale" placeholder="Precio de venta ($)" min="0" step="0.01">
-        <input type="number" id="productPriceCost" placeholder="Precio de costo ($)" min="0" step="0.01">
-        <input type="number" id="productQuantity" placeholder="Cantidad en stock" min="0">
-        <input type="number" id="productMinStock" placeholder="Stock mínimo (alerta)" min="0">
-        <input type="text" id="productCategory" placeholder="Categoría (ej: Almacén, Bebidas)">
-        <button onclick="addProduct()">Agregar / Actualizar Producto</button>
-        <button onclick="cancelEdit()" id="btnCancelar" style="display:none; background: linear-gradient(135deg, #95a5a6, #7f8c8d);">Cancelar</button>
+<!-- TOOLBAR -->
+<div class="toolbar">
+    <div class="search-wrap">
+        <span class="search-icon">⌕</span>
+        <input type="text" id="searchBox" placeholder="Buscar producto o categoría..." onkeyup="searchProduct()">
     </div>
+    <div class="sort-buttons">
+        <button class="btn-sort" onclick="sortByName()">A→Z</button>
+        <button class="btn-sort" onclick="sortByPrice()">$ Precio</button>
+        <button class="btn-sort" onclick="sortByStock()">Stock ↑</button>
+    </div>
+    <button class="btn-import" onclick="document.getElementById('excelInput').click()">📂 Importar Excel/CSV</button>
+    <input type="file" id="excelInput" accept=".csv,.xlsx" style="display:none" onchange="importCSV(event)">
+    <button class="btn-add-toggle" onclick="toggleForm()" id="btnToggleForm">+ Agregar Producto</button>
+</div>
 
-    <!-- LISTA DE PRODUCTOS -->
-    <div id="productList"></div>
+<!-- FORMULARIO COLAPSABLE -->
+<div id="formPanel" class="form-panel collapsed">
+    <div class="form-inner">
+        <h2 id="formTitle">Nuevo Producto</h2>
+        <div class="form-grid">
+            <div class="form-group">
+                <label>Nombre *</label>
+                <input type="text" id="productName" placeholder="Ej: Arroz 1kg">
+            </div>
+            <div class="form-group">
+                <label>Categoría</label>
+                <input type="text" id="productCategory" placeholder="Ej: Almacén">
+            </div>
+            <div class="form-group">
+                <label>Precio de venta *</label>
+                <input type="number" id="productPriceSale" placeholder="0.00" min="0" step="0.01">
+            </div>
+            <div class="form-group">
+                <label>Precio de costo *</label>
+                <input type="number" id="productPriceCost" placeholder="0.00" min="0" step="0.01">
+            </div>
+            <div class="form-group">
+                <label>Cantidad en stock *</label>
+                <input type="number" id="productQuantity" placeholder="0" min="0">
+            </div>
+            <div class="form-group">
+                <label>Stock mínimo (alerta)</label>
+                <input type="number" id="productMinStock" placeholder="5" min="0">
+            </div>
+        </div>
+        <div class="form-actions">
+            <button class="btn-primary" onclick="addProduct()">Guardar Producto</button>
+            <button class="btn-cancel" onclick="cancelEdit()" id="btnCancelar" style="display:none">Cancelar edición</button>
+            <button class="btn-close-form" onclick="toggleForm()">✕ Cerrar</button>
+        </div>
+    </div>
+</div>
 
-    <script src="script.js"></script>
+<!-- TABLA DE PRODUCTOS -->
+<div class="table-wrap">
+    <table id="productTable">
+        <thead>
+            <tr>
+                <th>Producto</th>
+                <th>Categoría</th>
+                <th>P. Venta</th>
+                <th>P. Costo</th>
+                <th>Stock</th>
+                <th>Mín.</th>
+                <th>Estado</th>
+                <th>Acciones</th>
+            </tr>
+        </thead>
+        <tbody id="productList"></tbody>
+    </table>
+    <div id="emptyState" class="empty-state" style="display:none">
+        <span>📦</span>
+        <p>No hay productos todavía.<br>Importá un CSV o agregá uno manualmente.</p>
+    </div>
+</div>
+
+<!-- INSTRUCCIONES IMPORTAR -->
+<div class="import-hint">
+    <strong>Formato para importar CSV:</strong> El archivo debe tener columnas en este orden: <code>Nombre, Categoría, Precio Venta, Precio Costo, Stock, Stock Mínimo</code>. La primera fila (encabezado) se ignora automáticamente.
+</div>
+
+<script src="script.js"></script>
 </body>
 </html>
