@@ -1,41 +1,43 @@
-// ===== ESTADO =====
+// ================================================================
+// DATOS — todo se guarda en localStorage del navegador
+// ================================================================
 let products = JSON.parse(localStorage.getItem("productos")) || [];
+let ventas   = JSON.parse(localStorage.getItem("ventas"))    || [];
 let editIndex = -1;
-let formOpen = false;
 
-// ===== GUARDAR =====
-function saveData() {
-    localStorage.setItem("productos", JSON.stringify(products));
+// Carrito temporal (solo existe en memoria mientras se arma la venta)
+let carrito = [];
+
+// ================================================================
+// PESTAÑAS
+// ================================================================
+function showTab(id, btn) {
+    document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.getElementById(id).classList.add('active');
+    btn.classList.add('active');
+    if (id === 'tab-historial') mostrarTodoHistorial();
 }
 
-// ===== TOGGLE FORMULARIO =====
-function toggleForm() {
-    formOpen = !formOpen;
-    const panel = document.getElementById("formPanel");
-    const btn = document.getElementById("btnToggleForm");
-    if (formOpen) {
-        panel.classList.remove("collapsed");
-        btn.textContent = "✕ Cerrar formulario";
-        btn.classList.add("open");
-    } else {
-        panel.classList.add("collapsed");
-        btn.textContent = "+ Agregar Producto";
-        btn.classList.remove("open");
-        cancelEdit();
-    }
-}
+// ================================================================
+// GUARDAR DATOS
+// ================================================================
+function saveData()   { localStorage.setItem("productos", JSON.stringify(products)); }
+function saveVentas() { localStorage.setItem("ventas",    JSON.stringify(ventas));   }
 
-// ===== AGREGAR / ACTUALIZAR =====
+// ================================================================
+// AGREGAR / ACTUALIZAR PRODUCTO
+// ================================================================
 function addProduct() {
-    let name     = document.getElementById("productName").value.trim();
-    let priceSale= parseFloat(document.getElementById("productPriceSale").value);
-    let priceCost= parseFloat(document.getElementById("productPriceCost").value);
-    let quantity = parseInt(document.getElementById("productQuantity").value);
-    let minStock = parseInt(document.getElementById("productMinStock").value);
-    let category = document.getElementById("productCategory").value.trim() || "General";
+    let name      = document.getElementById("productName").value.trim();
+    let priceSale = parseFloat(document.getElementById("productPriceSale").value);
+    let priceCost = parseFloat(document.getElementById("productPriceCost").value);
+    let quantity  = parseInt(document.getElementById("productQuantity").value);
+    let minStock  = parseInt(document.getElementById("productMinStock").value);
+    let category  = document.getElementById("productCategory").value.trim() || "General";
 
     if (!name || isNaN(priceSale) || isNaN(priceCost) || isNaN(quantity)) {
-        alert("Completá los campos obligatorios: nombre, precio venta, precio costo y cantidad.");
+        alert("Completá todos los campos obligatorios (nombre, precio venta, precio costo y cantidad).");
         return;
     }
 
@@ -50,7 +52,7 @@ function addProduct() {
         product.id = products[editIndex].id;
         products[editIndex] = product;
         editIndex = -1;
-        document.getElementById("formTitle").textContent = "Nuevo Producto";
+        document.getElementById("formTitle").textContent = "Agregar Producto";
         document.getElementById("btnCancelar").style.display = "none";
     } else {
         products.push(product);
@@ -59,81 +61,70 @@ function addProduct() {
     saveData();
     clearInputs();
     refreshUI();
-
-    // cerrar formulario al guardar
-    if (formOpen) toggleForm();
 }
 
-// ===== LIMPIAR INPUTS =====
+// ================================================================
+// LIMPIAR / CANCELAR
+// ================================================================
 function clearInputs() {
     ["productName","productPriceSale","productPriceCost",
-     "productQuantity","productMinStock","productCategory"].forEach(id => {
-        document.getElementById(id).value = "";
-    });
+     "productQuantity","productMinStock","productCategory"]
+        .forEach(id => document.getElementById(id).value = "");
 }
-
-// ===== CANCELAR EDICION =====
 function cancelEdit() {
     editIndex = -1;
     clearInputs();
-    document.getElementById("formTitle").textContent = "Nuevo Producto";
+    document.getElementById("formTitle").textContent = "Agregar Producto";
     document.getElementById("btnCancelar").style.display = "none";
 }
 
-// ===== MOSTRAR PRODUCTOS (TABLA) =====
+// ================================================================
+// MOSTRAR PRODUCTOS
+// ================================================================
 function displayProducts(data = products) {
-    const tbody = document.getElementById("productList");
-    const empty = document.getElementById("emptyState");
-    const table = document.getElementById("productTable");
-
-    tbody.innerHTML = "";
+    let list = document.getElementById("productList");
+    list.innerHTML = "";
 
     if (data.length === 0) {
-        table.style.display = "none";
-        empty.style.display = "block";
+        list.innerHTML = "<p style='color:#888; margin-top:20px;'>No se encontraron productos 📦</p>";
         return;
     }
 
-    table.style.display = "table";
-    empty.style.display = "none";
-
     data.forEach(item => {
-        const realIndex = products.indexOf(item);
-
-        let rowClass = "row-ok";
-        let badge = `<span class="badge badge-ok">✔ OK</span>`;
+        let realIndex = products.indexOf(item);
+        let estadoClass = "", badge = "";
 
         if (item.quantity === 0) {
-            rowClass = "row-sin";
-            badge = `<span class="badge badge-sin">✕ Sin stock</span>`;
+            estadoClass = "sin-stock";
+            badge = `<span class="badge badge-sin">Sin stock</span>`;
         } else if (item.quantity <= item.minStock) {
-            rowClass = "row-bajo";
-            badge = `<span class="badge badge-bajo">⚠ Bajo</span>`;
+            estadoClass = "stock-bajo";
+            badge = `<span class="badge badge-bajo">⚠ Stock bajo</span>`;
+        } else {
+            badge = `<span class="badge badge-ok">✔ En stock</span>`;
         }
 
-        tbody.innerHTML += `
-            <tr class="${rowClass}">
-                <td class="td-name">${item.name}</td>
-                <td>${item.category}</td>
-                <td class="td-mono">$${item.priceSale.toLocaleString('es-AR')}</td>
-                <td class="td-mono">$${item.priceCost.toLocaleString('es-AR')}</td>
-                <td class="td-mono">${item.quantity}</td>
-                <td class="td-mono">${item.minStock}</td>
-                <td>${badge}</td>
-                <td>
-                    <div class="td-actions">
-                        <button class="btn-edit" onclick="editProduct(${realIndex})">Editar</button>
-                        <button class="btn-delete" onclick="deleteProduct(${realIndex})">Eliminar</button>
-                    </div>
-                </td>
-            </tr>
-        `;
+        list.innerHTML += `
+            <div class="producto-card ${estadoClass}">
+                <h3>${item.name}</h3>
+                <p><b>Categoría:</b> ${item.category}</p>
+                <p><b>Precio de venta:</b> $${item.priceSale.toLocaleString('es-AR')}</p>
+                <p><b>Precio de costo:</b> $${item.priceCost.toLocaleString('es-AR')}</p>
+                <p><b>Stock:</b> ${item.quantity} unidades (mínimo: ${item.minStock})</p>
+                ${badge}
+                <div style="margin-top:10px;">
+                    <button onclick="editProduct(${realIndex})">Editar</button>
+                    <button onclick="deleteProduct(${realIndex})" style="background:linear-gradient(135deg,#e74c3c,#c0392b);">Eliminar</button>
+                </div>
+            </div>`;
     });
 }
 
-// ===== EDITAR =====
+// ================================================================
+// EDITAR / ELIMINAR
+// ================================================================
 function editProduct(index) {
-    const p = products[index];
+    let p = products[index];
     document.getElementById("productName").value      = p.name;
     document.getElementById("productPriceSale").value = p.priceSale;
     document.getElementById("productPriceCost").value = p.priceCost;
@@ -143,13 +134,8 @@ function editProduct(index) {
     editIndex = index;
     document.getElementById("formTitle").textContent = "Editar Producto";
     document.getElementById("btnCancelar").style.display = "inline-block";
-
-    // abrir formulario si está cerrado
-    if (!formOpen) toggleForm();
     window.scrollTo({ top: 0, behavior: 'smooth' });
 }
-
-// ===== ELIMINAR =====
 function deleteProduct(index) {
     if (!confirm(`¿Eliminar "${products[index].name}"?`)) return;
     products.splice(index, 1);
@@ -157,159 +143,313 @@ function deleteProduct(index) {
     refreshUI();
 }
 
-// ===== BUSCAR =====
+// ================================================================
+// BUSCAR / ORDENAR / BORRAR TODO
+// ================================================================
 function searchProduct() {
-    const q = document.getElementById("searchBox").value.toLowerCase();
-    const filtered = products.filter(p =>
-        p.name.toLowerCase().includes(q) ||
-        p.category.toLowerCase().includes(q)
-    );
-    displayProducts(filtered);
+    let q = document.getElementById("searchBox").value.toLowerCase();
+    displayProducts(products.filter(p =>
+        p.name.toLowerCase().includes(q) || p.category.toLowerCase().includes(q)));
 }
-
-// ===== ORDENAR =====
-function sortByName() {
-    products.sort((a, b) => a.name.localeCompare(b.name, 'es'));
-    saveData(); refreshUI();
-}
-function sortByPrice() {
-    products.sort((a, b) => a.priceSale - b.priceSale);
-    saveData(); refreshUI();
-}
-function sortByStock() {
-    products.sort((a, b) => a.quantity - b.quantity);
-    saveData(); refreshUI();
-}
-
-// ===== BORRAR TODO =====
+function sortByPrice() { products.sort((a,b) => a.priceSale - b.priceSale); saveData(); refreshUI(); }
+function sortByStock() { products.sort((a,b) => a.quantity - b.quantity);   saveData(); refreshUI(); }
 function clearAll() {
     if (!confirm("¿Borrar TODOS los productos?")) return;
-    products = [];
-    saveData();
-    refreshUI();
+    products = []; saveData(); refreshUI();
 }
 
-// ===== DASHBOARD =====
+// ================================================================
+// DASHBOARD
+// ================================================================
 function updateDashboard() {
-    const total          = products.length;
-    const totalStock     = products.reduce((s, p) => s + p.quantity, 0);
-    const valorVenta     = products.reduce((s, p) => s + (p.priceSale * p.quantity), 0);
-    const valorCosto     = products.reduce((s, p) => s + (p.priceCost * p.quantity), 0);
-    const sinStock       = products.filter(p => p.quantity === 0).length;
-    const stockBajo      = products.filter(p => p.quantity > 0 && p.quantity <= p.minStock).length;
+    let total           = products.length;
+    let totalStock      = products.reduce((s,p) => s + p.quantity, 0);
+    let totalValorVenta = products.reduce((s,p) => s + p.priceSale * p.quantity, 0);
+    let totalValorCosto = products.reduce((s,p) => s + p.priceCost * p.quantity, 0);
+    let sinStock        = products.filter(p => p.quantity === 0).length;
+    let stockBajo       = products.filter(p => p.quantity > 0 && p.quantity <= p.minStock).length;
 
-    const dash = document.getElementById("dashboard");
-
-    let alertas = "";
-    if (sinStock > 0)
-        alertas += `<div class="dash-card alerta"><div class="dash-label">Sin stock</div><div class="dash-value">${sinStock}</div></div>`;
-    if (stockBajo > 0)
-        alertas += `<div class="dash-card alerta"><div class="dash-label">Stock bajo</div><div class="dash-value">${stockBajo}</div></div>`;
-
-    dash.innerHTML = `
-        <div class="dash-card"><div class="dash-label">Productos</div><div class="dash-value">${total}</div></div>
-        <div class="dash-card"><div class="dash-label">Unidades totales</div><div class="dash-value">${totalStock}</div></div>
-        <div class="dash-card"><div class="dash-label">Valor stock (venta)</div><div class="dash-value">$${Math.round(valorVenta).toLocaleString('es-AR')}</div></div>
-        <div class="dash-card"><div class="dash-label">Valor stock (costo)</div><div class="dash-value">$${Math.round(valorCosto).toLocaleString('es-AR')}</div></div>
-        ${alertas}
+    document.getElementById("dashboard").innerHTML = `
+        <h2>Resumen</h2>
+        <p>📦 <b>Productos:</b> ${total}</p>
+        <p>🔢 <b>Unidades totales:</b> ${totalStock}</p>
+        <p>💰 <b>Valor stock (venta):</b> $${Math.round(totalValorVenta).toLocaleString('es-AR')}</p>
+        <p>🏷️ <b>Valor stock (costo):</b> $${Math.round(totalValorCosto).toLocaleString('es-AR')}</p>
+        ${sinStock  > 0 ? `<p class="alerta">🚫 <b>Sin stock:</b> ${sinStock}</p>`  : ''}
+        ${stockBajo > 0 ? `<p class="alerta">⚠ <b>Stock bajo:</b> ${stockBajo}</p>` : ''}
     `;
 }
 
-// ===== EXPORTAR CSV =====
+// ================================================================
+// EXPORTAR STOCK A EXCEL
+// ================================================================
 function exportToExcel() {
     if (products.length === 0) { alert("No hay productos para exportar."); return; }
-
     let csv = "Nombre;Categoría;Precio Venta;Precio Costo;Stock;Stock Mínimo\n";
     products.forEach(p => {
         csv += `"${p.name}";"${p.category}";${p.priceSale};${p.priceCost};${p.quantity};${p.minStock}\n`;
     });
+    descargarCSV(csv, `stock_${fechaHoy()}.csv`);
+}
 
-    const bom  = "\uFEFF";
-    const blob = new Blob([bom + csv], { type: "text/csv;charset=utf-8;" });
-    const url  = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href  = url;
-    const fecha = new Date().toLocaleDateString('es-AR').replace(/\//g, '-');
-    link.download = `stock_${fecha}.csv`;
-    link.click();
+// ================================================================
+// SISTEMA DE VENTAS — CARRITO
+// ================================================================
+function ventaFiltrar() {
+    let q = document.getElementById("ventaSearch").value.toLowerCase().trim();
+    let sugs = document.getElementById("ventaSugerencias");
+    sugs.innerHTML = "";
+    if (!q) return;
+
+    let encontrados = products.filter(p =>
+        p.quantity > 0 && (p.name.toLowerCase().includes(q) || p.category.toLowerCase().includes(q))
+    ).slice(0, 6);
+
+    if (encontrados.length === 0) {
+        sugs.innerHTML = "<p style='color:#888; font-size:13px;'>Sin resultados o sin stock.</p>";
+        return;
+    }
+
+    encontrados.forEach(p => {
+        let div = document.createElement("div");
+        div.className = "sugerencia-item";
+        div.innerHTML = `<b>${p.name}</b> — $${p.priceSale.toLocaleString('es-AR')} <span style="color:#888;">(stock: ${p.quantity})</span>`;
+        div.onclick = () => agregarAlCarrito(p);
+        sugs.appendChild(div);
+    });
+}
+
+function agregarAlCarrito(producto) {
+    let existente = carrito.find(c => c.id === producto.id);
+    if (existente) {
+        existente.cantidad++;
+    } else {
+        carrito.push({ id: producto.id, nombre: producto.name, precio: producto.priceSale, cantidad: 1 });
+    }
+    document.getElementById("ventaSearch").value = "";
+    document.getElementById("ventaSugerencias").innerHTML = "";
+    renderCarrito();
+}
+
+function renderCarrito() {
+    let lista    = document.getElementById("carritoLista");
+    let totalDiv = document.getElementById("carritoTotal");
+    lista.innerHTML = "";
+
+    if (carrito.length === 0) {
+        lista.innerHTML = "<p style='color:#888; font-size:13px;'>El carrito está vacío.</p>";
+        totalDiv.innerHTML = "";
+        return;
+    }
+
+    let total = 0;
+    carrito.forEach((item, i) => {
+        let subtotal = item.precio * item.cantidad;
+        total += subtotal;
+        let fila = document.createElement("div");
+        fila.className = "carrito-fila";
+        fila.innerHTML = `
+            <span style="flex:1;">${item.nombre}</span>
+            <span>$${item.precio.toLocaleString('es-AR')} x</span>
+            <input type="number" min="1" value="${item.cantidad}" onchange="cambiarCantidad(${i}, this.value)">
+            <span>= $${subtotal.toLocaleString('es-AR')}</span>
+            <button class="btn-quitar" onclick="quitarDelCarrito(${i})">✕</button>
+        `;
+        lista.appendChild(fila);
+    });
+
+    totalDiv.innerHTML = `<hr><b>TOTAL: $${total.toLocaleString('es-AR')}</b>`;
+}
+
+function cambiarCantidad(index, valor) {
+    let cant = parseInt(valor);
+    if (isNaN(cant) || cant < 1) cant = 1;
+    let prod = products.find(p => p.id === carrito[index].id);
+    if (prod && cant > prod.quantity) {
+        alert(`Stock disponible: ${prod.quantity} unidades.`);
+        cant = prod.quantity;
+    }
+    carrito[index].cantidad = cant;
+    renderCarrito();
+}
+
+function quitarDelCarrito(index) {
+    carrito.splice(index, 1);
+    renderCarrito();
+}
+
+function limpiarCarrito() {
+    carrito = [];
+    renderCarrito();
+}
+
+function confirmarVenta() {
+    if (carrito.length === 0) { alert("El carrito está vacío."); return; }
+
+    for (let item of carrito) {
+        let prod = products.find(p => p.id === item.id);
+        if (!prod || prod.quantity < item.cantidad) {
+            alert(`Stock insuficiente para "${item.nombre}". Disponible: ${prod ? prod.quantity : 0}`);
+            return;
+        }
+    }
+
+    let medioPago = document.querySelector('input[name="medioPago"]:checked').value;
+    let total     = carrito.reduce((s,c) => s + c.precio * c.cantidad, 0);
+    let ahora     = new Date();
+
+    let venta = {
+        id: Date.now(),
+        fecha: ahora.toISOString(),
+        fechaLegible: ahora.toLocaleDateString('es-AR') + ' ' + ahora.toLocaleTimeString('es-AR', {hour:'2-digit', minute:'2-digit'}),
+        medioPago,
+        total,
+        items: carrito.map(c => ({ nombre: c.nombre, precio: c.precio, cantidad: c.cantidad }))
+    };
+    ventas.push(venta);
+    saveVentas();
+
+    // Descontar stock
+    carrito.forEach(item => {
+        let prod = products.find(p => p.id === item.id);
+        if (prod) prod.quantity -= item.cantidad;
+    });
+    saveData();
+
+    carrito = [];
+    renderCarrito();
+    refreshUI();
+    alert(`✅ Venta registrada!\nTotal: $${total.toLocaleString('es-AR')}\nPago: ${medioPago}`);
+}
+
+// ================================================================
+// HISTORIAL
+// ================================================================
+function mostrarTodoHistorial() {
+    document.getElementById("filtroDesde").value = "";
+    document.getElementById("filtroHasta").value = "";
+    renderHistorial(ventas);
+    renderResumenVentas(ventas);
+}
+
+function filtrarHistorial() {
+    let desde = document.getElementById("filtroDesde").value;
+    let hasta = document.getElementById("filtroHasta").value;
+    let filtradas = ventas.filter(v => {
+        let fecha = v.fecha.substring(0,10);
+        if (desde && fecha < desde) return false;
+        if (hasta && fecha > hasta) return false;
+        return true;
+    });
+    renderHistorial(filtradas);
+    renderResumenVentas(filtradas);
+}
+
+function renderHistorial(data) {
+    let contenedor = document.getElementById("historialLista");
+    contenedor.innerHTML = "";
+
+    if (data.length === 0) {
+        contenedor.innerHTML = "<p style='color:#888; text-align:center; margin-top:20px;'>No hay ventas registradas.</p>";
+        return;
+    }
+
+    [...data].reverse().forEach(v => {
+        let tagClass = v.medioPago === "efectivo" ? "tag-efectivo" : "tag-transferencia";
+        let tagIcon  = v.medioPago === "efectivo" ? "💵 Efectivo"  : "📲 Transferencia";
+        let itemsHTML = v.items.map(i =>
+            `<li>${i.nombre} × ${i.cantidad} = $${(i.precio * i.cantidad).toLocaleString('es-AR')}</li>`
+        ).join('');
+
+        contenedor.innerHTML += `
+            <div class="venta-card">
+                <h4>${v.fechaLegible} <span class="tag-pago ${tagClass}">${tagIcon}</span></h4>
+                <ul style="margin:6px 0 6px 16px; font-size:13px;">${itemsHTML}</ul>
+                <b>Total: $${v.total.toLocaleString('es-AR')}</b>
+            </div>`;
+    });
+}
+
+function renderResumenVentas(data) {
+    let ahora = new Date();
+
+    // Inicio de semana (lunes)
+    let diaSemana = ahora.getDay() === 0 ? 6 : ahora.getDay() - 1;
+    let inicioSemana = new Date(ahora);
+    inicioSemana.setDate(ahora.getDate() - diaSemana);
+    inicioSemana.setHours(0,0,0,0);
+
+    // Inicio de mes
+    let inicioMes = new Date(ahora.getFullYear(), ahora.getMonth(), 1);
+
+    let ventasSemana = data.filter(v => new Date(v.fecha) >= inicioSemana);
+    let ventasMes    = data.filter(v => new Date(v.fecha) >= inicioMes);
+
+    let totalSemana    = ventasSemana.reduce((s,v) => s + v.total, 0);
+    let efectivoSemana = ventasSemana.filter(v => v.medioPago === "efectivo").reduce((s,v) => s + v.total, 0);
+    let transferSemana = ventasSemana.filter(v => v.medioPago === "transferencia").reduce((s,v) => s + v.total, 0);
+
+    let totalMes    = ventasMes.reduce((s,v) => s + v.total, 0);
+    let efectivoMes = ventasMes.filter(v => v.medioPago === "efectivo").reduce((s,v) => s + v.total, 0);
+    let transferMes = ventasMes.filter(v => v.medioPago === "transferencia").reduce((s,v) => s + v.total, 0);
+
+    let nombreMes = ahora.toLocaleDateString('es-AR', { month: 'long' });
+    nombreMes = nombreMes.charAt(0).toUpperCase() + nombreMes.slice(1);
+
+    document.getElementById("resumenVentas").innerHTML = `
+        <div class="resumen-card">
+            <div class="rc-label">📅 Esta semana</div>
+            <div class="rc-valor">$${Math.round(totalSemana).toLocaleString('es-AR')}</div>
+            <div class="rc-sub">${ventasSemana.length} venta${ventasSemana.length !== 1 ? 's' : ''}</div>
+            <div class="rc-sub" style="margin-top:6px;">💵 $${Math.round(efectivoSemana).toLocaleString('es-AR')}</div>
+            <div class="rc-sub">📲 $${Math.round(transferSemana).toLocaleString('es-AR')}</div>
+        </div>
+        <div class="resumen-card">
+            <div class="rc-label">🗓 ${nombreMes}</div>
+            <div class="rc-valor">$${Math.round(totalMes).toLocaleString('es-AR')}</div>
+            <div class="rc-sub">${ventasMes.length} venta${ventasMes.length !== 1 ? 's' : ''}</div>
+            <div class="rc-sub" style="margin-top:6px;">💵 $${Math.round(efectivoMes).toLocaleString('es-AR')}</div>
+            <div class="rc-sub">📲 $${Math.round(transferMes).toLocaleString('es-AR')}</div>
+        </div>
+    `;
+}
+
+// ================================================================
+// EXPORTAR HISTORIAL A EXCEL
+// ================================================================
+function exportarHistorialExcel() {
+    if (ventas.length === 0) { alert("No hay ventas para exportar."); return; }
+    let csv = "Fecha;Medio de Pago;Productos;Total\n";
+    ventas.forEach(v => {
+        let itemsTexto = v.items.map(i => `${i.nombre} x${i.cantidad}`).join(' | ');
+        csv += `"${v.fechaLegible}";"${v.medioPago}";"${itemsTexto}";${v.total}\n`;
+    });
+    descargarCSV(csv, `ventas_${fechaHoy()}.csv`);
+}
+
+// ================================================================
+// UTILIDADES
+// ================================================================
+function descargarCSV(csv, nombre) {
+    let bom  = "\uFEFF";
+    let blob = new Blob([bom + csv], { type: "text/csv;charset=utf-8;" });
+    let url  = URL.createObjectURL(blob);
+    let a    = document.createElement("a");
+    a.href = url; a.download = nombre; a.click();
     URL.revokeObjectURL(url);
 }
-
-// ===== IMPORTAR CSV =====
-function importCSV(event) {
-    const file = event.target.files[0];
-    if (!file) return;
-
-    const reader = new FileReader();
-    reader.onload = function(e) {
-        const text = e.target.result
-            // quitar BOM si existe
-            .replace(/^\uFEFF/, "");
-
-        const lines = text.split(/\r?\n/).filter(l => l.trim() !== "");
-
-        // saltar encabezado (primera línea)
-        const dataLines = lines.slice(1);
-
-        let importados = 0;
-        let errores    = 0;
-
-        dataLines.forEach((line, i) => {
-            // separar por ; o ,
-            const sep = line.includes(";") ? ";" : ",";
-            const cols = line.split(sep).map(c => c.replace(/^"|"$/g, "").trim());
-
-            // cols: [Nombre, Categoría, PrecioVenta, PrecioCosto, Stock, StockMin]
-            const name      = cols[0] || "";
-            const category  = cols[1] || "General";
-            const priceSale = parseFloat(cols[2]);
-            const priceCost = parseFloat(cols[3]);
-            const quantity  = parseInt(cols[4]);
-            const minStock  = parseInt(cols[5]);
-
-            if (!name || isNaN(priceSale) || isNaN(quantity)) {
-                errores++;
-                return;
-            }
-
-            // si ya existe el producto por nombre, actualizar; si no, agregar
-            const existing = products.findIndex(p => p.name.toLowerCase() === name.toLowerCase());
-            const product = {
-                name, category, priceSale, priceCost,
-                quantity,
-                minStock: isNaN(minStock) ? 5 : minStock,
-                id: Date.now() + i
-            };
-
-            if (existing >= 0) {
-                product.id = products[existing].id;
-                products[existing] = product;
-            } else {
-                products.push(product);
-            }
-            importados++;
-        });
-
-        saveData();
-        refreshUI();
-
-        let msg = `✔ Se importaron ${importados} producto(s).`;
-        if (errores > 0) msg += `\n⚠ ${errores} fila(s) tenían datos inválidos y fueron ignoradas.`;
-        alert(msg);
-    };
-    reader.readAsText(file, "UTF-8");
-
-    // resetear el input para poder importar el mismo archivo de nuevo
-    event.target.value = "";
+function fechaHoy() {
+    return new Date().toLocaleDateString('es-AR').replace(/\//g, '-');
 }
 
-// ===== REFRESCAR UI =====
+// ================================================================
+// REFRESCAR / INICIO
+// ================================================================
 function refreshUI() {
     displayProducts();
     updateDashboard();
 }
-
-// ===== INIT =====
 window.onload = function () {
     refreshUI();
+    renderCarrito();
 };
