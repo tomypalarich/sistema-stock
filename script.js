@@ -79,45 +79,53 @@ function cancelEdit() {
 }
 
 // ================================================================
-// MOSTRAR PRODUCTOS
+// MOSTRAR PRODUCTOS (tabla tipo Excel)
 // ================================================================
 function displayProducts(data = products) {
-    let list = document.getElementById("productList");
-    list.innerHTML = "";
+    let tbody = document.getElementById("productList");
+    tbody.innerHTML = "";
 
     if (data.length === 0) {
-        list.innerHTML = "<p style='color:#888; margin-top:20px;'>No se encontraron productos 📦</p>";
+        tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; padding:24px; color:var(--text2);">No se encontraron productos 📦</td></tr>`;
         return;
     }
 
     data.forEach(item => {
         let realIndex = products.indexOf(item);
-        let estadoClass = "", badge = "";
+        let badge = "", tdStock = "";
 
         if (item.quantity === 0) {
-            estadoClass = "sin-stock";
-            badge = `<span class="badge badge-sin">Sin stock</span>`;
+            badge   = `<span class="badge badge-sin">Sin stock</span>`;
+            tdStock = `class="sin-stock"`;
         } else if (item.quantity <= item.minStock) {
-            estadoClass = "stock-bajo";
-            badge = `<span class="badge badge-bajo">⚠ Stock bajo</span>`;
+            badge   = `<span class="badge badge-bajo">⚠ Bajo</span>`;
+            tdStock = `class="stock-bajo"`;
         } else {
-            badge = `<span class="badge badge-ok">✔ En stock</span>`;
+            badge = `<span class="badge badge-ok">✔ OK</span>`;
         }
 
-        list.innerHTML += `
-            <div class="producto-card ${estadoClass}">
-                <h3>${item.name}</h3>
-                <p><b>Categoría:</b> ${item.category}</p>
-                <p><b>Precio de venta:</b> $${item.priceSale.toLocaleString('es-AR')}</p>
-                <p><b>Precio de costo:</b> $${item.priceCost.toLocaleString('es-AR')}</p>
-                <p><b>Stock:</b> ${item.quantity} unidades (mínimo: ${item.minStock})</p>
-                ${badge}
-                <div style="margin-top:10px;">
-                    <button onclick="editProduct(${realIndex})">Editar</button>
-                    <button onclick="deleteProduct(${realIndex})" style="background:linear-gradient(135deg,#e74c3c,#c0392b);">Eliminar</button>
-                </div>
-            </div>`;
+        tbody.innerHTML += `
+            <tr>
+                <td><b>${item.name}</b></td>
+                <td>${item.category}</td>
+                <td>$${item.priceSale.toLocaleString('es-AR')}</td>
+                <td>$${item.priceCost.toLocaleString('es-AR')}</td>
+                <td ${tdStock}>${item.quantity} u. <span style="font-size:11px; color:var(--text2);">(mín: ${item.minStock})</span></td>
+                <td>${badge}</td>
+                <td class="td-acciones">
+                    <button onclick="editProduct(${realIndex})">✏ Editar</button>
+                    <button onclick="deleteProduct(${realIndex})" class="btn-danger">🗑</button>
+                </td>
+            </tr>`;
     });
+}
+
+// ================================================================
+// FORMULARIO COLAPSABLE
+// ================================================================
+function toggleFormulario() {
+    let form = document.getElementById("formContainer");
+    form.style.display = form.style.display === "none" ? "block" : "none";
 }
 
 // ================================================================
@@ -134,6 +142,8 @@ function editProduct(index) {
     editIndex = index;
     document.getElementById("formTitle").textContent = "Editar Producto";
     document.getElementById("btnCancelar").style.display = "inline-block";
+    // Abrir formulario si está cerrado
+    document.getElementById("formContainer").style.display = "block";
     window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 function deleteProduct(index) {
@@ -451,7 +461,5 @@ function refreshUI() {
 }
 window.onload = function () {
     refreshUI();
-    if (document.getElementById("carritoLista")) {
-        renderCarrito();
-    }
+    renderCarrito();
 };

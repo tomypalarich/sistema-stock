@@ -19,69 +19,84 @@
     <!-- ===== PESTAÑA 1: STOCK ===== -->
     <div id="tab-stock" class="tab-content active">
 
-        <!-- DASHBOARD -->
         <div id="dashboard"></div>
 
-        <!-- BOTONES DE ACCION -->
+        <!-- Botones acciones -->
         <div style="margin:10px;">
             <button onclick="sortByPrice()">Ordenar por Precio</button>
             <button onclick="sortByStock()">Ordenar por Stock</button>
-            <button onclick="exportToExcel()">Exportar a Excel</button>
-            <button onclick="clearAll()" style="background: linear-gradient(135deg, #e74c3c, #c0392b);">Borrar Todo</button>
+            <button onclick="exportToExcel()" class="btn-green">Exportar a Excel</button>
+            <button onclick="clearAll()" class="btn-danger">Borrar Todo</button>
+        </div>
+
+        <!-- Botón para abrir/cerrar formulario -->
+        <div style="margin:10px;">
+            <button class="form-toggle-btn" onclick="toggleFormulario()">➕ Agregar Producto</button>
+        </div>
+
+        <!-- FORMULARIO COLAPSABLE -->
+        <div id="formContainer" style="display:none;">
+            <div class="container">
+                <h2 id="formTitle" style="color:var(--text); margin-bottom:14px;">Agregar Producto</h2>
+                <input type="text"   id="productName"      placeholder="Nombre del producto">
+                <input type="number" id="productPriceSale" placeholder="Precio de venta ($)" min="0" step="0.01">
+                <input type="number" id="productPriceCost" placeholder="Precio de costo ($)" min="0" step="0.01">
+                <input type="number" id="productQuantity"  placeholder="Cantidad en stock"   min="0">
+                <input type="number" id="productMinStock"  placeholder="Stock mínimo (alerta)" min="0">
+                <input type="text"   id="productCategory"  placeholder="Categoría (ej: Cuadernos, Útiles)">
+                <br>
+                <button onclick="addProduct()">Guardar Producto</button>
+                <button onclick="cancelEdit()" id="btnCancelar" class="btn-gray" style="display:none;">Cancelar edición</button>
+                <button onclick="toggleFormulario()" class="btn-gray">Cerrar ✕</button>
+            </div>
         </div>
 
         <!-- BUSCADOR -->
-        <input type="text" id="searchBox" placeholder="Buscar producto o categoría..." onkeyup="searchProduct()">
-
-        <!-- FORMULARIO -->
-        <div class="container">
-            <h2 id="formTitle">Agregar Producto</h2>
-            <input type="text" id="productName" placeholder="Nombre del producto">
-            <input type="number" id="productPriceSale" placeholder="Precio de venta ($)" min="0" step="0.01">
-            <input type="number" id="productPriceCost" placeholder="Precio de costo ($)" min="0" step="0.01">
-            <input type="number" id="productQuantity" placeholder="Cantidad en stock" min="0">
-            <input type="number" id="productMinStock" placeholder="Stock mínimo (alerta)" min="0">
-            <input type="text" id="productCategory" placeholder="Categoría (ej: Cuadernos, Útiles)">
-            <button onclick="addProduct()">Agregar / Actualizar Producto</button>
-            <button onclick="cancelEdit()" id="btnCancelar" style="display:none; background: linear-gradient(135deg, #95a5a6, #7f8c8d);">Cancelar</button>
+        <div style="margin:10px;">
+            <input type="text" id="searchBox" placeholder="🔍 Buscar producto o categoría..." onkeyup="searchProduct()" style="max-width:360px; width:90%;">
         </div>
 
-        <!-- LISTA DE PRODUCTOS -->
-        <div id="productList"></div>
+        <!-- TABLA DE PRODUCTOS -->
+        <div class="tabla-wrapper">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Producto</th>
+                        <th>Categoría</th>
+                        <th>Precio Venta</th>
+                        <th>Precio Costo</th>
+                        <th>Stock</th>
+                        <th>Estado</th>
+                        <th>Acciones</th>
+                    </tr>
+                </thead>
+                <tbody id="productList"></tbody>
+            </table>
+        </div>
     </div>
 
     <!-- ===== PESTAÑA 2: NUEVA VENTA ===== -->
     <div id="tab-ventas" class="tab-content">
-
-        <div class="container" style="width:90%; max-width:600px;">
+        <div class="container-dark">
             <h2>🛒 Nueva Venta</h2>
-
-            <!-- Buscador de producto para venta -->
-            <input type="text" id="ventaSearch" placeholder="Buscar producto para agregar..." oninput="ventaFiltrar()" style="max-width:100%;">
+            <input type="text" id="ventaSearch" placeholder="Buscar producto para agregar..." oninput="ventaFiltrar()" style="max-width:100%; width:100%;">
             <div id="ventaSugerencias"></div>
 
-            <!-- Carrito interno -->
             <div id="carritoContainer" style="margin-top:15px;">
-                <h3 style="margin-bottom:8px;">Productos en esta venta:</h3>
+                <h3 style="margin-bottom:8px; color:var(--text2); font-size:14px;">PRODUCTOS EN ESTA VENTA:</h3>
                 <div id="carritoLista"></div>
-                <div id="carritoTotal" style="font-size:16px; font-weight:bold; margin-top:10px;"></div>
+                <div id="carritoTotal" style="font-size:16px; font-weight:bold; margin-top:10px; color:var(--accent);"></div>
             </div>
 
-            <!-- Medio de pago -->
-            <div style="margin-top:15px;">
-                <label style="font-weight:bold;">Medio de pago:</label><br><br>
-                <label><input type="radio" name="medioPago" value="efectivo" checked> 💵 Efectivo</label>
+            <div style="margin-top:16px; text-align:left;">
+                <label style="font-weight:bold; color:var(--text2); font-size:13px;">MEDIO DE PAGO:</label><br><br>
+                <label style="color:var(--text);"><input type="radio" name="medioPago" value="efectivo" checked> 💵 Efectivo</label>
                 &nbsp;&nbsp;
-                <label><input type="radio" name="medioPago" value="transferencia"> 📲 Transferencia</label>
+                <label style="color:var(--text);"><input type="radio" name="medioPago" value="transferencia"> 📲 Transferencia</label>
             </div>
-
             <br>
-            <button onclick="confirmarVenta()" style="background: linear-gradient(135deg, #2980b9, #1a6fa0); width:100%; padding:14px; font-size:15px;">
-                ✅ Confirmar Venta
-            </button>
-            <button onclick="limpiarCarrito()" style="background: linear-gradient(135deg, #95a5a6, #7f8c8d); width:100%; margin-top:5px;">
-                🗑 Vaciar carrito
-            </button>
+            <button onclick="confirmarVenta()" style="width:100%; padding:14px; font-size:15px;">✅ Confirmar Venta</button>
+            <button onclick="limpiarCarrito()" class="btn-gray" style="width:100%; margin-top:6px;">🗑 Vaciar carrito</button>
         </div>
     </div>
 
@@ -89,23 +104,20 @@
     <div id="tab-historial" class="tab-content">
         <div style="max-width:700px; margin:20px auto;">
 
-            <!-- Resumen semanal y mensual -->
             <div id="resumenVentas"></div>
 
-            <!-- Filtro por fecha -->
-            <div class="container" style="width:90%; max-width:600px;">
+            <div class="container-dark">
                 <h3>🔍 Filtrar historial</h3>
-                <label style="font-size:13px;">Desde:</label>
+                <label style="font-size:13px; color:var(--text2);">Desde:</label>
                 <input type="date" id="filtroDesde" style="width:auto; margin:5px;">
-                <label style="font-size:13px;">Hasta:</label>
+                <label style="font-size:13px; color:var(--text2);">Hasta:</label>
                 <input type="date" id="filtroHasta" style="width:auto; margin:5px;">
                 <br>
                 <button onclick="filtrarHistorial()">Filtrar</button>
-                <button onclick="mostrarTodoHistorial()" style="background: linear-gradient(135deg, #95a5a6, #7f8c8d);">Ver todo</button>
-                <button onclick="exportarHistorialExcel()" style="background: linear-gradient(135deg, #27ae60, #1e8449);">Exportar a Excel</button>
+                <button onclick="mostrarTodoHistorial()" class="btn-gray">Ver todo</button>
+                <button onclick="exportarHistorialExcel()" class="btn-green">Exportar a Excel</button>
             </div>
 
-            <!-- Lista de ventas -->
             <div id="historialLista"></div>
         </div>
     </div>
