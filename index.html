@@ -7,122 +7,182 @@
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <h1>📦 Sistema de Stock y Precios</h1>
+
+    <!-- BARRA SUPERIOR -->
+    <div class="topbar">
+        <div class="topbar-title">
+            <i class="ti ti-package" aria-hidden="true"></i>
+            Sistema de stock y precios
+        </div>
+        <div class="topbar-sub">Librería</div>
+    </div>
 
     <!-- PESTAÑAS -->
     <div class="tabs">
-        <button class="tab-btn active" onclick="showTab('tab-stock', this)">📦 Stock y Precios</button>
-        <button class="tab-btn" onclick="showTab('tab-ventas', this)">🛒 Nueva Venta</button>
-        <button class="tab-btn" onclick="showTab('tab-historial', this)">📋 Historial</button>
+        <button class="tab-btn active" onclick="showTab('tab-stock', this)">
+            <i class="ti ti-layout-list" aria-hidden="true"></i> Stock y precios
+        </button>
+        <button class="tab-btn" onclick="showTab('tab-ventas', this)">
+            <i class="ti ti-shopping-cart" aria-hidden="true"></i> Nueva venta
+        </button>
+        <button class="tab-btn" onclick="showTab('tab-historial', this)">
+            <i class="ti ti-clipboard-list" aria-hidden="true"></i> Historial
+        </button>
     </div>
 
     <!-- ===== PESTAÑA 1: STOCK ===== -->
     <div id="tab-stock" class="tab-content active">
+        <div class="content">
 
-        <div id="dashboard"></div>
+            <!-- DASHBOARD -->
+            <div id="dashboard"></div>
 
-        <!-- Botones acciones -->
-        <div style="margin:10px;">
-            <button onclick="sortByName()">Ordenar A-Z</button>
-            <button onclick="sortByPrice()">Ordenar por Precio</button>
-            <button onclick="sortByStock()">Ordenar por Stock</button>
-            <button onclick="exportToExcel()" class="btn-green">Exportar a Excel</button>
-            <button onclick="clearAll()" class="btn-danger">Borrar Todo</button>
-        </div>
-
-        <!-- Botón para abrir/cerrar formulario -->
-        <div style="margin:10px;">
-            <button class="form-toggle-btn" onclick="toggleFormulario()">➕ Agregar Producto</button>
-        </div>
-
-        <!-- FORMULARIO COLAPSABLE -->
-        <div id="formContainer" style="display:none;">
-            <div class="container">
-                <h2 id="formTitle" style="color:var(--text); margin-bottom:14px;">Agregar Producto</h2>
-                <input type="text"   id="productName"      placeholder="Nombre del producto">
-                <input type="number" id="productPriceSale" placeholder="Precio de venta ($)" min="0" step="0.01">
-                <input type="number" id="productPriceCost" placeholder="Precio de costo ($)" min="0" step="0.01">
-                <input type="number" id="productQuantity"  placeholder="Cantidad en stock"   min="0">
-                <input type="number" id="productMinStock"  placeholder="Stock mínimo (alerta)" min="0">
-                <input type="text"   id="productCategory"  placeholder="Categoría (ej: Cuadernos, Útiles)">
-                <br>
-                <button onclick="addProduct()">Guardar Producto</button>
-                <button onclick="cancelEdit()" id="btnCancelar" class="btn-gray" style="display:none;">Cancelar edición</button>
-                <button onclick="toggleFormulario()" class="btn-gray">Cerrar ✕</button>
+            <!-- TOOLBAR -->
+            <div class="toolbar">
+                <div class="toolbar-left">
+                    <div class="search-wrap">
+                        <i class="ti ti-search" aria-hidden="true"></i>
+                        <input type="text" id="searchBox" placeholder="Buscar producto o categoría..." onkeyup="searchProduct()">
+                    </div>
+                    <button class="btn" onclick="sortByName()"><i class="ti ti-arrows-sort" aria-hidden="true"></i> A–Z</button>
+                    <button class="btn" onclick="sortByPrice()"><i class="ti ti-sort-ascending-numbers" aria-hidden="true"></i> Por precio</button>
+                    <button class="btn" onclick="sortByStock()"><i class="ti ti-sort-ascending-numbers" aria-hidden="true"></i> Por stock</button>
+                    <button class="btn btn-export" onclick="exportToExcel()"><i class="ti ti-file-spreadsheet" aria-hidden="true"></i> Exportar</button>
+                    <button class="btn btn-danger-outline" onclick="clearAll()"><i class="ti ti-trash" aria-hidden="true"></i> Borrar todo</button>
+                </div>
+                <button class="btn btn-primary" onclick="toggleFormulario()"><i class="ti ti-plus" aria-hidden="true"></i> Agregar producto</button>
             </div>
-        </div>
 
-        <!-- BUSCADOR -->
-        <div style="margin:10px;">
-            <input type="text" id="searchBox" placeholder="🔍 Buscar producto o categoría..." onkeyup="searchProduct()" style="max-width:360px; width:90%;">
-        </div>
+            <!-- FORMULARIO COLAPSABLE -->
+            <div id="formContainer" style="display:none;">
+                <div class="form-panel">
+                    <div class="form-panel-header">
+                        <span id="formTitle">Agregar producto</span>
+                        <button class="btn-close" onclick="toggleFormulario()" aria-label="Cerrar"><i class="ti ti-x" aria-hidden="true"></i></button>
+                    </div>
+                    <div class="form-panel-body">
+                        <div class="form-grid">
+                            <div class="form-field">
+                                <label>Nombre del producto</label>
+                                <input type="text" id="productName" placeholder="Ej: Cuaderno tapa dura A4">
+                            </div>
+                            <div class="form-field">
+                                <label>Categoría</label>
+                                <input type="text" id="productCategory" placeholder="Ej: Cuadernos, Útiles">
+                            </div>
+                            <div class="form-field">
+                                <label>Precio de venta ($)</label>
+                                <input type="number" id="productPriceSale" placeholder="0" min="0" step="0.01">
+                            </div>
+                            <div class="form-field">
+                                <label>Precio de costo ($)</label>
+                                <input type="number" id="productPriceCost" placeholder="0" min="0" step="0.01">
+                            </div>
+                            <div class="form-field">
+                                <label>Cantidad en stock</label>
+                                <input type="number" id="productQuantity" placeholder="0" min="0">
+                            </div>
+                            <div class="form-field">
+                                <label>Stock mínimo (alerta)</label>
+                                <input type="number" id="productMinStock" placeholder="5" min="0">
+                            </div>
+                        </div>
+                        <div class="form-actions">
+                            <button class="btn btn-primary" onclick="addProduct()"><i class="ti ti-device-floppy" aria-hidden="true"></i> Guardar producto</button>
+                            <button class="btn" onclick="cancelEdit()" id="btnCancelar" style="display:none;"><i class="ti ti-x" aria-hidden="true"></i> Cancelar edición</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
 
-        <!-- TABLA DE PRODUCTOS -->
-        <div class="tabla-wrapper">
-            <table>
-                <thead>
-                    <tr>
-                        <th>Producto</th>
-                        <th>Categoría</th>
-                        <th>Precio Venta</th>
-                        <th>Precio Costo</th>
-                        <th>Stock</th>
-                        <th>Estado</th>
-                        <th>Acciones</th>
-                    </tr>
-                </thead>
-                <tbody id="productList"></tbody>
-            </table>
+            <!-- TABLA -->
+            <div class="tabla-wrapper">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Producto</th>
+                            <th>Categoría</th>
+                            <th>Precio venta</th>
+                            <th>Precio costo</th>
+                            <th>Stock</th>
+                            <th>Estado</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody id="productList"></tbody>
+                </table>
+            </div>
+
         </div>
     </div>
 
     <!-- ===== PESTAÑA 2: NUEVA VENTA ===== -->
     <div id="tab-ventas" class="tab-content">
-        <div class="container-dark">
-            <h2>🛒 Nueva Venta</h2>
-            <input type="text" id="ventaSearch" placeholder="Buscar producto para agregar..." oninput="ventaFiltrar()" style="max-width:100%; width:100%;">
-            <div id="ventaSugerencias"></div>
+        <div class="content">
+            <div class="panel">
+                <div class="panel-header"><i class="ti ti-shopping-cart" aria-hidden="true"></i> Nueva venta</div>
+                <div class="panel-body">
+                    <div class="form-field" style="margin-bottom:8px;">
+                        <label>Buscar producto</label>
+                        <input type="text" id="ventaSearch" placeholder="Escribí el nombre o categoría..." oninput="ventaFiltrar()" style="width:100%; max-width:100%;">
+                    </div>
+                    <div id="ventaSugerencias"></div>
 
-            <div id="carritoContainer" style="margin-top:15px;">
-                <h3 style="margin-bottom:8px; color:var(--text2); font-size:14px;">PRODUCTOS EN ESTA VENTA:</h3>
-                <div id="carritoLista"></div>
-                <div id="carritoTotal" style="font-size:16px; font-weight:bold; margin-top:10px; color:var(--accent);"></div>
-            </div>
+                    <div style="margin-top:20px;">
+                        <div class="section-label">Productos en esta venta</div>
+                        <div id="carritoLista"></div>
+                        <div id="carritoTotal"></div>
+                    </div>
 
-            <div style="margin-top:16px; text-align:left;">
-                <label style="font-weight:bold; color:var(--text2); font-size:13px;">MEDIO DE PAGO:</label><br><br>
-                <label style="color:var(--text);"><input type="radio" name="medioPago" value="efectivo" checked> 💵 Efectivo</label>
-                &nbsp;&nbsp;
-                <label style="color:var(--text);"><input type="radio" name="medioPago" value="transferencia"> 📲 Transferencia</label>
+                    <div style="margin-top:20px;">
+                        <div class="section-label">Medio de pago</div>
+                        <div class="radio-group">
+                            <label class="radio-opt"><input type="radio" name="medioPago" value="efectivo" checked> <i class="ti ti-cash" aria-hidden="true"></i> Efectivo</label>
+                            <label class="radio-opt"><input type="radio" name="medioPago" value="transferencia"> <i class="ti ti-transfer" aria-hidden="true"></i> Transferencia</label>
+                        </div>
+                    </div>
+
+                    <div class="form-actions" style="margin-top:20px;">
+                        <button class="btn btn-primary" onclick="confirmarVenta()" style="flex:1;justify-content:center;padding:12px;"><i class="ti ti-check" aria-hidden="true"></i> Confirmar venta</button>
+                        <button class="btn" onclick="limpiarCarrito()"><i class="ti ti-trash" aria-hidden="true"></i> Vaciar</button>
+                    </div>
+                </div>
             </div>
-            <br>
-            <button onclick="confirmarVenta()" style="width:100%; padding:14px; font-size:15px;">✅ Confirmar Venta</button>
-            <button onclick="limpiarCarrito()" class="btn-gray" style="width:100%; margin-top:6px;">🗑 Vaciar carrito</button>
         </div>
     </div>
 
     <!-- ===== PESTAÑA 3: HISTORIAL ===== -->
     <div id="tab-historial" class="tab-content">
-        <div style="max-width:700px; margin:20px auto;">
+        <div class="content">
 
             <div id="resumenVentas"></div>
 
-            <div class="container-dark">
-                <h3>🔍 Filtrar historial</h3>
-                <label style="font-size:13px; color:var(--text2);">Desde:</label>
-                <input type="date" id="filtroDesde" style="width:auto; margin:5px;">
-                <label style="font-size:13px; color:var(--text2);">Hasta:</label>
-                <input type="date" id="filtroHasta" style="width:auto; margin:5px;">
-                <br>
-                <button onclick="filtrarHistorial()">Filtrar</button>
-                <button onclick="mostrarTodoHistorial()" class="btn-gray">Ver todo</button>
-                <button onclick="exportarHistorialExcel()" class="btn-green">Exportar a Excel</button>
+            <div class="panel" style="margin-bottom:20px;">
+                <div class="panel-header"><i class="ti ti-filter" aria-hidden="true"></i> Filtrar historial</div>
+                <div class="panel-body">
+                    <div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap;">
+                        <div class="form-field" style="margin:0;">
+                            <label>Desde</label>
+                            <input type="date" id="filtroDesde" style="width:160px;">
+                        </div>
+                        <div class="form-field" style="margin:0;">
+                            <label>Hasta</label>
+                            <input type="date" id="filtroHasta" style="width:160px;">
+                        </div>
+                        <div style="display:flex; gap:8px; margin-top:18px;">
+                            <button class="btn btn-primary" onclick="filtrarHistorial()"><i class="ti ti-filter" aria-hidden="true"></i> Filtrar</button>
+                            <button class="btn" onclick="mostrarTodoHistorial()">Ver todo</button>
+                            <button class="btn btn-export" onclick="exportarHistorialExcel()"><i class="ti ti-file-spreadsheet" aria-hidden="true"></i> Exportar</button>
+                        </div>
+                    </div>
+                </div>
             </div>
 
             <div id="historialLista"></div>
         </div>
     </div>
 
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/dist/tabler-icons.min.css">
     <script src="script.js"></script>
 </body>
 </html>
