@@ -1,5 +1,5 @@
 // ================================================================
-// DATOS — todo se guarda en localStorage del navegador
+// DATOS - todo se guarda en localStorage del navegador
 // ================================================================
 let products = JSON.parse(localStorage.getItem("productos")) || [];
 let ventas   = JSON.parse(localStorage.getItem("ventas"))    || [];
@@ -201,7 +201,7 @@ function exportToExcel() {
 }
 
 // ================================================================
-// SISTEMA DE VENTAS — CARRITO
+// SISTEMA DE VENTAS - CARRITO
 // ================================================================
 function ventaFiltrar() {
     let q = document.getElementById("ventaSearch").value.toLowerCase().trim();
@@ -221,7 +221,7 @@ function ventaFiltrar() {
     encontrados.forEach(p => {
         let div = document.createElement("div");
         div.className = "sugerencia-item";
-        div.innerHTML = `<b>${p.name}</b> — $${p.priceSale.toLocaleString('es-AR')} <span style="color:#888;">(stock: ${p.quantity})</span>`;
+        div.innerHTML = `<b>${p.name}</b> - $${p.priceSale.toLocaleString('es-AR')} <span style="color:#888;">(stock: ${p.quantity})</span>`;
         div.onclick = () => agregarAlCarrito(p);
         sugs.appendChild(div);
     });
