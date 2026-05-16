@@ -4,12 +4,10 @@
 let products = JSON.parse(localStorage.getItem("productos")) || [];
 let ventas   = JSON.parse(localStorage.getItem("ventas"))    || [];
 let editIndex = -1;
-
-// Carrito temporal (solo existe en memoria mientras se arma la venta)
 let carrito = [];
 
 // ================================================================
-// PESTAÑAS
+// PESTANAS
 // ================================================================
 function showTab(id, btn) {
     document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
@@ -37,7 +35,7 @@ function addProduct() {
     let category  = document.getElementById("productCategory").value.trim() || "General";
 
     if (!name || isNaN(priceSale) || isNaN(priceCost) || isNaN(quantity)) {
-        alert("Completá todos los campos obligatorios (nombre, precio venta, precio costo y cantidad).");
+        alert("Completa todos los campos obligatorios.");
         return;
     }
 
@@ -52,7 +50,7 @@ function addProduct() {
         product.id = products[editIndex].id;
         products[editIndex] = product;
         editIndex = -1;
-        document.getElementById("formTitle").textContent = "Agregar Producto";
+        document.getElementById("formTitle").textContent = "Agregar producto";
         document.getElementById("btnCancelar").style.display = "none";
     } else {
         products.push(product);
@@ -74,12 +72,16 @@ function clearInputs() {
 function cancelEdit() {
     editIndex = -1;
     clearInputs();
-    document.getElementById("formTitle").textContent = "Agregar Producto";
+    document.getElementById("formTitle").textContent = "Agregar producto";
     document.getElementById("btnCancelar").style.display = "none";
+}
+function toggleFormulario() {
+    let form = document.getElementById("formContainer");
+    form.style.display = form.style.display === "none" ? "block" : "none";
 }
 
 // ================================================================
-// MOSTRAR PRODUCTOS (tabla tipo Excel)
+// MOSTRAR PRODUCTOS
 // ================================================================
 function displayProducts(data = products) {
     let tbody = document.getElementById("productList");
@@ -110,7 +112,7 @@ function displayProducts(data = products) {
                 <td class="muted">${item.category}</td>
                 <td>$${item.priceSale.toLocaleString('es-AR')}</td>
                 <td class="muted">$${item.priceCost.toLocaleString('es-AR')}</td>
-                <td ${tdStock}>${item.quantity} u. <span style="font-size:11px; color:#a0abbf;">(mín: ${item.minStock})</span></td>
+                <td ${tdStock}>${item.quantity} u. <span style="font-size:11px; color:#a0abbf;">(min: ${item.minStock})</span></td>
                 <td>${badge}</td>
                 <td class="td-acciones">
                     <button class="btn" onclick="editProduct(${realIndex})"><i class="ti ti-edit"></i> Editar</button>
@@ -118,14 +120,6 @@ function displayProducts(data = products) {
                 </td>
             </tr>`;
     });
-}
-
-// ================================================================
-// FORMULARIO COLAPSABLE
-// ================================================================
-function toggleFormulario() {
-    let form = document.getElementById("formContainer");
-    form.style.display = form.style.display === "none" ? "block" : "none";
 }
 
 // ================================================================
@@ -140,14 +134,13 @@ function editProduct(index) {
     document.getElementById("productMinStock").value  = p.minStock;
     document.getElementById("productCategory").value  = p.category;
     editIndex = index;
-    document.getElementById("formTitle").textContent = "Editar Producto";
-    document.getElementById("btnCancelar").style.display = "inline-block";
-    // Abrir formulario si está cerrado
+    document.getElementById("formTitle").textContent = "Editar producto";
+    document.getElementById("btnCancelar").style.display = "inline-flex";
     document.getElementById("formContainer").style.display = "block";
     window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 function deleteProduct(index) {
-    if (!confirm(`¿Eliminar "${products[index].name}"?`)) return;
+    if (!confirm(`Eliminar "${products[index].name}"?`)) return;
     products.splice(index, 1);
     saveData();
     refreshUI();
@@ -163,9 +156,9 @@ function searchProduct() {
 }
 function sortByName()  { products.sort((a,b) => a.name.localeCompare(b.name, 'es')); saveData(); refreshUI(); }
 function sortByPrice() { products.sort((a,b) => a.priceSale - b.priceSale); saveData(); refreshUI(); }
-function sortByStock() { products.sort((a,b) => a.quantity - b.quantity);   saveData(); refreshUI(); }
+function sortByStock() { products.sort((a,b) => a.quantity - b.quantity); saveData(); refreshUI(); }
 function clearAll() {
-    if (!confirm("¿Borrar TODOS los productos?")) return;
+    if (!confirm("Borrar TODOS los productos?")) return;
     products = []; saveData(); refreshUI();
 }
 
@@ -193,11 +186,114 @@ function updateDashboard() {
 // ================================================================
 function exportToExcel() {
     if (products.length === 0) { alert("No hay productos para exportar."); return; }
-    let csv = "Nombre;Categoría;Precio Venta;Precio Costo;Stock;Stock Mínimo\n";
+    let csv = "Nombre;Categoria;Precio Venta;Precio Costo;Stock;Stock Minimo\n";
     products.forEach(p => {
         csv += `"${p.name}";"${p.category}";${p.priceSale};${p.priceCost};${p.quantity};${p.minStock}\n`;
     });
     descargarCSV(csv, `stock_${fechaHoy()}.csv`);
+}
+
+// ================================================================
+// IMPORTAR DESDE EXCEL/CSV
+// ================================================================
+function importarExcel() {
+    document.getElementById("inputImportar").click();
+}
+
+function procesarImportacion(event) {
+    let file = event.target.files[0];
+    if (!file) return;
+
+    let reader = new FileReader();
+    reader.onload = function(e) {
+        let texto = e.target.result;
+        // Detectar separador: punto y coma o coma
+        let separador = texto.includes(';') ? ';' : ',';
+        let lineas = texto.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+
+        if (lineas.length < 2) {
+            alert("El archivo no tiene datos suficientes.");
+            return;
+        }
+
+        // Leer encabezados (primera fila)
+        let headers = lineas[0].split(separador).map(h => h.replace(/"/g, '').trim().toLowerCase());
+
+        // Mapear columnas flexiblemente
+        let iNombre    = headers.findIndex(h => h.includes('nombre') || h.includes('product') || h.includes('descripcion'));
+        let iCategoria = headers.findIndex(h => h.includes('categ'));
+        let iVenta     = headers.findIndex(h => h.includes('venta') || h.includes('precio') || h.includes('price'));
+        let iCosto     = headers.findIndex(h => h.includes('costo') || h.includes('cost'));
+        let iStock     = headers.findIndex(h => h.includes('stock') && !h.includes('min'));
+        let iMinStock  = headers.findIndex(h => h.includes('min'));
+
+        if (iNombre === -1 || iVenta === -1) {
+            alert("No se encontraron las columnas requeridas.\nEl archivo debe tener al menos: Nombre y Precio Venta.");
+            return;
+        }
+
+        let importados = 0;
+        let errores = 0;
+
+        for (let i = 1; i < lineas.length; i++) {
+            // Parsear respetando comillas
+            let cols = parsearCSVLinea(lineas[i], separador);
+
+            let nombre = cols[iNombre] ? cols[iNombre].replace(/"/g, '').trim() : '';
+            if (!nombre) continue;
+
+            let priceSale = iVenta    >= 0 ? parseFloat(cols[iVenta]?.replace(/[^0-9.,-]/g, '').replace(',', '.'))  : 0;
+            let priceCost = iCosto    >= 0 ? parseFloat(cols[iCosto]?.replace(/[^0-9.,-]/g, '').replace(',', '.'))  : 0;
+            let quantity  = iStock    >= 0 ? parseInt(cols[iStock])   : 0;
+            let minStock  = iMinStock >= 0 ? parseInt(cols[iMinStock]) : 5;
+            let category  = iCategoria >= 0 ? cols[iCategoria]?.replace(/"/g, '').trim() : 'General';
+
+            if (isNaN(priceSale)) { errores++; continue; }
+
+            // Si ya existe el producto (mismo nombre), actualiza; si no, agrega
+            let existente = products.find(p => p.name.toLowerCase() === nombre.toLowerCase());
+            if (existente) {
+                existente.priceSale = priceSale || existente.priceSale;
+                existente.priceCost = isNaN(priceCost) ? existente.priceCost : priceCost;
+                existente.quantity  = isNaN(quantity)  ? existente.quantity  : quantity;
+                existente.minStock  = isNaN(minStock)  ? existente.minStock  : minStock;
+                existente.category  = category || existente.category;
+            } else {
+                products.push({
+                    id: Date.now() + i,
+                    name: nombre,
+                    priceSale: priceSale || 0,
+                    priceCost: isNaN(priceCost) ? 0 : priceCost,
+                    quantity:  isNaN(quantity)  ? 0 : quantity,
+                    minStock:  isNaN(minStock)  ? 5 : minStock,
+                    category:  category || 'General'
+                });
+            }
+            importados++;
+        }
+
+        saveData();
+        refreshUI();
+        event.target.value = "";
+
+        let msg = `Importacion completada.\n${importados} producto${importados !== 1 ? 's' : ''} importado${importados !== 1 ? 's' : ''}.`;
+        if (errores > 0) msg += `\n${errores} fila${errores !== 1 ? 's' : ''} con error ignorada${errores !== 1 ? 's' : ''}.`;
+        alert(msg);
+    };
+    reader.readAsText(file, 'UTF-8');
+}
+
+function parsearCSVLinea(linea, sep) {
+    let cols = [];
+    let actual = '';
+    let enComillas = false;
+    for (let c of linea) {
+        if (c === '"') { enComillas = !enComillas; }
+        else if (c === sep && !enComillas) { cols.push(actual); actual = ''; }
+        else { actual += c; }
+    }
+    cols.push(actual);
+    return cols;
 }
 
 // ================================================================
@@ -214,14 +310,14 @@ function ventaFiltrar() {
     ).slice(0, 6);
 
     if (encontrados.length === 0) {
-        sugs.innerHTML = "<p style='color:#888; font-size:13px;'>Sin resultados o sin stock.</p>";
+        sugs.innerHTML = "<p style='color:#aab4c8; font-size:13px; padding:8px 0;'>Sin resultados o sin stock.</p>";
         return;
     }
 
     encontrados.forEach(p => {
         let div = document.createElement("div");
         div.className = "sugerencia-item";
-        div.innerHTML = `<b>${p.name}</b> - $${p.priceSale.toLocaleString('es-AR')} <span style="color:#888;">(stock: ${p.quantity})</span>`;
+        div.innerHTML = `<span><b>${p.name}</b> <span class="muted">${p.category}</span></span><span>$${p.priceSale.toLocaleString('es-AR')} <span class="muted">(${p.quantity} u.)</span></span>`;
         div.onclick = () => agregarAlCarrito(p);
         sugs.appendChild(div);
     });
@@ -242,11 +338,13 @@ function agregarAlCarrito(producto) {
 function renderCarrito() {
     let lista    = document.getElementById("carritoLista");
     let totalDiv = document.getElementById("carritoTotal");
+    if (!lista) return;
     lista.innerHTML = "";
 
     if (carrito.length === 0) {
-        lista.innerHTML = "<p style='color:#888; font-size:13px;'>El carrito está vacío.</p>";
+        lista.innerHTML = "<p style='color:#aab4c8; font-size:13px; padding:8px 0;'>El carrito esta vacio.</p>";
         totalDiv.innerHTML = "";
+        actualizarPagoMixto(0);
         return;
     }
 
@@ -258,15 +356,16 @@ function renderCarrito() {
         fila.className = "carrito-fila";
         fila.innerHTML = `
             <span style="flex:1;">${item.nombre}</span>
-            <span>$${item.precio.toLocaleString('es-AR')} x</span>
+            <span class="muted">$${item.precio.toLocaleString('es-AR')} x</span>
             <input type="number" min="1" value="${item.cantidad}" onchange="cambiarCantidad(${i}, this.value)">
-            <span>= $${subtotal.toLocaleString('es-AR')}</span>
-            <button class="btn-quitar" onclick="quitarDelCarrito(${i})">✕</button>
+            <span style="font-weight:500; min-width:80px; text-align:right;">$${subtotal.toLocaleString('es-AR')}</span>
+            <button class="btn btn-danger-outline btn-quitar" onclick="quitarDelCarrito(${i})"><i class="ti ti-x"></i></button>
         `;
         lista.appendChild(fila);
     });
 
-    totalDiv.innerHTML = `<hr><b>TOTAL: $${total.toLocaleString('es-AR')}</b>`;
+    totalDiv.innerHTML = `<div class="carrito-total-line">Total: <span>$${total.toLocaleString('es-AR')}</span></div>`;
+    actualizarPagoMixto(total);
 }
 
 function cambiarCantidad(index, valor) {
@@ -291,8 +390,35 @@ function limpiarCarrito() {
     renderCarrito();
 }
 
+// ================================================================
+// PAGO MIXTO
+// ================================================================
+function actualizarPagoMixto(total) {
+    let tipo = document.querySelector('input[name="medioPago"]:checked');
+    if (!tipo || tipo.value !== 'mixto') return;
+    let efec = parseFloat(document.getElementById("pagoEfectivo")?.value) || 0;
+    let trans = total - efec;
+    let spanTrans = document.getElementById("pagoTransferenciaAuto");
+    if (spanTrans) spanTrans.textContent = '$' + Math.max(0, trans).toLocaleString('es-AR');
+}
+
+function onMedioPagoChange() {
+    let tipo = document.querySelector('input[name="medioPago"]:checked').value;
+    let mixtoPanel = document.getElementById("pagoMixtoPanel");
+    mixtoPanel.style.display = tipo === 'mixto' ? 'block' : 'none';
+    if (tipo === 'mixto') {
+        let total = carrito.reduce((s,c) => s + c.precio * c.cantidad, 0);
+        actualizarPagoMixto(total);
+    }
+}
+
+function onEfectivoInput() {
+    let total = carrito.reduce((s,c) => s + c.precio * c.cantidad, 0);
+    actualizarPagoMixto(total);
+}
+
 function confirmarVenta() {
-    if (carrito.length === 0) { alert("El carrito está vacío."); return; }
+    if (carrito.length === 0) { alert("El carrito esta vacio."); return; }
 
     for (let item of carrito) {
         let prod = products.find(p => p.id === item.id);
@@ -302,22 +428,37 @@ function confirmarVenta() {
         }
     }
 
-    let medioPago = document.querySelector('input[name="medioPago"]:checked').value;
-    let total     = carrito.reduce((s,c) => s + c.precio * c.cantidad, 0);
-    let ahora     = new Date();
+    let total = carrito.reduce((s,c) => s + c.precio * c.cantidad, 0);
+    let tipo  = document.querySelector('input[name="medioPago"]:checked').value;
+    let medioPago, pagoDetalle;
 
+    if (tipo === 'mixto') {
+        let efec  = parseFloat(document.getElementById("pagoEfectivo").value) || 0;
+        let trans = total - efec;
+        if (efec < 0 || trans < 0 || efec > total) {
+            alert("Los montos del pago mixto no son validos.");
+            return;
+        }
+        medioPago   = 'mixto';
+        pagoDetalle = { efectivo: efec, transferencia: trans };
+    } else {
+        medioPago   = tipo;
+        pagoDetalle = null;
+    }
+
+    let ahora = new Date();
     let venta = {
         id: Date.now(),
         fecha: ahora.toISOString(),
         fechaLegible: ahora.toLocaleDateString('es-AR') + ' ' + ahora.toLocaleTimeString('es-AR', {hour:'2-digit', minute:'2-digit'}),
         medioPago,
+        pagoDetalle,
         total,
         items: carrito.map(c => ({ nombre: c.nombre, precio: c.precio, cantidad: c.cantidad }))
     };
     ventas.push(venta);
     saveVentas();
 
-    // Descontar stock
     carrito.forEach(item => {
         let prod = products.find(p => p.id === item.id);
         if (prod) prod.quantity -= item.cantidad;
@@ -326,16 +467,25 @@ function confirmarVenta() {
 
     carrito = [];
     renderCarrito();
+    document.getElementById("pagoEfectivo") && (document.getElementById("pagoEfectivo").value = "");
+    document.getElementById("pagoMixtoPanel").style.display = "none";
+    document.querySelector('input[name="medioPago"][value="efectivo"]').checked = true;
     refreshUI();
-    alert(`✅ Venta registrada!\nTotal: $${total.toLocaleString('es-AR')}\nPago: ${medioPago}`);
+
+    let msgPago = tipo === 'mixto'
+        ? `Efectivo: $${pagoDetalle.efectivo.toLocaleString('es-AR')} / Transferencia: $${pagoDetalle.transferencia.toLocaleString('es-AR')}`
+        : tipo;
+    alert(`Venta registrada!\nTotal: $${total.toLocaleString('es-AR')}\nPago: ${msgPago}`);
 }
 
 // ================================================================
 // HISTORIAL
 // ================================================================
 function mostrarTodoHistorial() {
-    document.getElementById("filtroDesde").value = "";
-    document.getElementById("filtroHasta").value = "";
+    let desde = document.getElementById("filtroDesde");
+    let hasta = document.getElementById("filtroHasta");
+    if (desde) desde.value = "";
+    if (hasta) hasta.value = "";
     renderHistorial(ventas);
     renderResumenVentas(ventas);
 }
@@ -358,79 +508,238 @@ function renderHistorial(data) {
     contenedor.innerHTML = "";
 
     if (data.length === 0) {
-        contenedor.innerHTML = "<p style='color:#888; text-align:center; margin-top:20px;'>No hay ventas registradas.</p>";
+        contenedor.innerHTML = "<p style='color:#aab4c8; text-align:center; margin-top:20px;'>No hay ventas registradas.</p>";
         return;
     }
 
     [...data].reverse().forEach(v => {
-        let tagClass = v.medioPago === "efectivo" ? "tag-efectivo" : "tag-transferencia";
-        let tagIcon  = v.medioPago === "efectivo" ? "💵 Efectivo"  : "📲 Transferencia";
+        let tagClass, tagTexto;
+        if (v.medioPago === 'mixto') {
+            tagClass = 'tag-mixto';
+            tagTexto = `<i class="ti ti-arrows-exchange"></i> Mixto`;
+        } else if (v.medioPago === 'efectivo') {
+            tagClass = 'tag-efectivo';
+            tagTexto = `<i class="ti ti-cash"></i> Efectivo`;
+        } else {
+            tagClass = 'tag-transferencia';
+            tagTexto = `<i class="ti ti-transfer"></i> Transferencia`;
+        }
+
+        let detalleHTML = '';
+        if (v.medioPago === 'mixto' && v.pagoDetalle) {
+            detalleHTML = `<div class="venta-mixto-detalle">
+                <span><i class="ti ti-cash"></i> Efectivo: $${v.pagoDetalle.efectivo.toLocaleString('es-AR')}</span>
+                <span><i class="ti ti-transfer"></i> Transf.: $${v.pagoDetalle.transferencia.toLocaleString('es-AR')}</span>
+            </div>`;
+        }
+
         let itemsHTML = v.items.map(i =>
-            `<li>${i.nombre} × ${i.cantidad} = $${(i.precio * i.cantidad).toLocaleString('es-AR')}</li>`
+            `<li>${i.nombre} x ${i.cantidad} = $${(i.precio * i.cantidad).toLocaleString('es-AR')}</li>`
         ).join('');
 
+        let ventaIndex = ventas.indexOf(v);
+
         contenedor.innerHTML += `
-            <div class="venta-card">
-                <h4>${v.fechaLegible} <span class="tag-pago ${tagClass}">${tagIcon}</span></h4>
-                <ul style="margin:6px 0 6px 16px; font-size:13px;">${itemsHTML}</ul>
-                <b>Total: $${v.total.toLocaleString('es-AR')}</b>
+            <div class="venta-card ${v.medioPago}">
+                <div class="venta-card-header">
+                    <div>
+                        <span class="venta-fecha">${v.fechaLegible}</span>
+                        <span class="tag-pago ${tagClass}">${tagTexto}</span>
+                    </div>
+                    <div class="venta-acciones">
+                        <button class="btn btn-sm" onclick="editarVenta(${ventaIndex})"><i class="ti ti-edit"></i> Editar</button>
+                        <button class="btn btn-danger-outline btn-sm" onclick="eliminarVenta(${ventaIndex})"><i class="ti ti-trash"></i></button>
+                    </div>
+                </div>
+                <ul class="venta-items">${itemsHTML}</ul>
+                ${detalleHTML}
+                <div class="venta-total">Total: $${v.total.toLocaleString('es-AR')}</div>
             </div>`;
     });
 }
 
+// ================================================================
+// EDITAR / ELIMINAR VENTAS
+// ================================================================
+function eliminarVenta(index) {
+    let v = ventas[index];
+    if (!confirm(`Eliminar la venta del ${v.fechaLegible} por $${v.total.toLocaleString('es-AR')}?`)) return;
+
+    // Devolver stock
+    v.items.forEach(item => {
+        let prod = products.find(p => p.name === item.nombre);
+        if (prod) prod.quantity += item.cantidad;
+    });
+
+    ventas.splice(index, 1);
+    saveVentas();
+    saveData();
+    refreshUI();
+    renderHistorial(ventas);
+    renderResumenVentas(ventas);
+}
+
+function editarVenta(index) {
+    let v = ventas[index];
+    let total = v.total;
+
+    // Opciones de medio de pago
+    let opcionesPago = ['efectivo', 'transferencia', 'mixto'];
+    let optHTML = opcionesPago.map(op =>
+        `<option value="${op}" ${v.medioPago === op ? 'selected' : ''}>${op.charAt(0).toUpperCase() + op.slice(1)}</option>`
+    ).join('');
+
+    let mixtoHTML = v.medioPago === 'mixto' && v.pagoDetalle ? `
+        <div id="editMixtoPanel" style="margin-top:10px; display:flex; gap:10px; flex-wrap:wrap;">
+            <div class="form-field" style="flex:1;">
+                <label>Efectivo ($)</label>
+                <input type="number" id="editEfectivo" value="${v.pagoDetalle.efectivo}" min="0" max="${total}" oninput="onEditMixtoInput(${total})">
+            </div>
+            <div class="form-field" style="flex:1;">
+                <label>Transferencia ($)</label>
+                <input type="number" id="editTransferencia" value="${v.pagoDetalle.transferencia}" readonly style="background:#f8fafc;">
+            </div>
+        </div>` : `<div id="editMixtoPanel" style="display:none; margin-top:10px;">
+            <div style="display:flex; gap:10px; flex-wrap:wrap;">
+                <div class="form-field" style="flex:1;"><label>Efectivo ($)</label><input type="number" id="editEfectivo" value="0" min="0" max="${total}" oninput="onEditMixtoInput(${total})"></div>
+                <div class="form-field" style="flex:1;"><label>Transferencia ($)</label><input type="number" id="editTransferencia" value="${total}" readonly style="background:#f8fafc;"></div>
+            </div>
+        </div>`;
+
+    // Crear modal
+    let modal = document.createElement('div');
+    modal.id = 'editModal';
+    modal.className = 'modal-overlay';
+    modal.innerHTML = `
+        <div class="modal-box">
+            <div class="modal-header">
+                <span>Editar venta - ${v.fechaLegible}</span>
+                <button class="btn-close" onclick="cerrarModal()"><i class="ti ti-x"></i></button>
+            </div>
+            <div class="modal-body">
+                <div class="form-field" style="margin-bottom:12px;">
+                    <label>Medio de pago</label>
+                    <select id="editMedioPago" class="select-input" onchange="onEditPagoChange(${total})">${optHTML}</select>
+                </div>
+                ${mixtoHTML}
+                <p style="font-size:12px; color:#7a8aaa; margin-top:12px;">
+                    <i class="ti ti-info-circle"></i> Solo se puede editar el medio de pago. Para cambiar productos, elimina la venta y registrala de nuevo.
+                </p>
+            </div>
+            <div class="modal-footer">
+                <button class="btn" onclick="cerrarModal()">Cancelar</button>
+                <button class="btn btn-primary" onclick="guardarEdicionVenta(${index}, ${total})"><i class="ti ti-device-floppy"></i> Guardar</button>
+            </div>
+        </div>`;
+    document.body.appendChild(modal);
+}
+
+function onEditPagoChange(total) {
+    let tipo = document.getElementById("editMedioPago").value;
+    let panel = document.getElementById("editMixtoPanel");
+    panel.style.display = tipo === 'mixto' ? 'flex' : 'none';
+    if (tipo === 'mixto') {
+        document.getElementById("editEfectivo").value = 0;
+        document.getElementById("editTransferencia").value = total;
+    }
+}
+
+function onEditMixtoInput(total) {
+    let efec = parseFloat(document.getElementById("editEfectivo").value) || 0;
+    document.getElementById("editTransferencia").value = Math.max(0, total - efec);
+}
+
+function guardarEdicionVenta(index, total) {
+    let tipo = document.getElementById("editMedioPago").value;
+    let pagoDetalle = null;
+
+    if (tipo === 'mixto') {
+        let efec  = parseFloat(document.getElementById("editEfectivo").value) || 0;
+        let trans = parseFloat(document.getElementById("editTransferencia").value) || 0;
+        if (efec < 0 || trans < 0 || Math.round(efec + trans) !== Math.round(total)) {
+            alert("Los montos no suman el total de la venta.");
+            return;
+        }
+        pagoDetalle = { efectivo: efec, transferencia: trans };
+    }
+
+    ventas[index].medioPago   = tipo;
+    ventas[index].pagoDetalle = pagoDetalle;
+    saveVentas();
+    cerrarModal();
+    renderHistorial(ventas);
+    renderResumenVentas(ventas);
+}
+
+function cerrarModal() {
+    let m = document.getElementById("editModal");
+    if (m) m.remove();
+}
+
+// ================================================================
+// RESUMEN VENTAS
+// ================================================================
 function renderResumenVentas(data) {
     let ahora = new Date();
-
-    // Inicio de semana (lunes)
     let diaSemana = ahora.getDay() === 0 ? 6 : ahora.getDay() - 1;
     let inicioSemana = new Date(ahora);
     inicioSemana.setDate(ahora.getDate() - diaSemana);
     inicioSemana.setHours(0,0,0,0);
-
-    // Inicio de mes
     let inicioMes = new Date(ahora.getFullYear(), ahora.getMonth(), 1);
 
-    let ventasSemana = data.filter(v => new Date(v.fecha) >= inicioSemana);
-    let ventasMes    = data.filter(v => new Date(v.fecha) >= inicioMes);
+    let vSemana = data.filter(v => new Date(v.fecha) >= inicioSemana);
+    let vMes    = data.filter(v => new Date(v.fecha) >= inicioMes);
 
-    let totalSemana    = ventasSemana.reduce((s,v) => s + v.total, 0);
-    let efectivoSemana = ventasSemana.filter(v => v.medioPago === "efectivo").reduce((s,v) => s + v.total, 0);
-    let transferSemana = ventasSemana.filter(v => v.medioPago === "transferencia").reduce((s,v) => s + v.total, 0);
+    function sumarPorMedio(arr, medio) {
+        return arr.reduce((s,v) => {
+            if (v.medioPago === medio) return s + v.total;
+            if (v.medioPago === 'mixto' && v.pagoDetalle) {
+                return s + (medio === 'efectivo' ? v.pagoDetalle.efectivo : v.pagoDetalle.transferencia);
+            }
+            return s;
+        }, 0);
+    }
 
-    let totalMes    = ventasMes.reduce((s,v) => s + v.total, 0);
-    let efectivoMes = ventasMes.filter(v => v.medioPago === "efectivo").reduce((s,v) => s + v.total, 0);
-    let transferMes = ventasMes.filter(v => v.medioPago === "transferencia").reduce((s,v) => s + v.total, 0);
+    let totalSemana = vSemana.reduce((s,v) => s + v.total, 0);
+    let efecSemana  = sumarPorMedio(vSemana, 'efectivo');
+    let transSemana = sumarPorMedio(vSemana, 'transferencia');
+
+    let totalMes = vMes.reduce((s,v) => s + v.total, 0);
+    let efecMes  = sumarPorMedio(vMes, 'efectivo');
+    let transMes = sumarPorMedio(vMes, 'transferencia');
 
     let nombreMes = ahora.toLocaleDateString('es-AR', { month: 'long' });
     nombreMes = nombreMes.charAt(0).toUpperCase() + nombreMes.slice(1);
 
     document.getElementById("resumenVentas").innerHTML = `
         <div class="resumen-card">
-            <div class="rc-label">📅 Esta semana</div>
+            <div class="rc-label">Esta semana</div>
             <div class="rc-valor">$${Math.round(totalSemana).toLocaleString('es-AR')}</div>
-            <div class="rc-sub">${ventasSemana.length} venta${ventasSemana.length !== 1 ? 's' : ''}</div>
-            <div class="rc-sub" style="margin-top:6px;">💵 $${Math.round(efectivoSemana).toLocaleString('es-AR')}</div>
-            <div class="rc-sub">📲 $${Math.round(transferSemana).toLocaleString('es-AR')}</div>
+            <div class="rc-sub">${vSemana.length} venta${vSemana.length !== 1 ? 's' : ''}</div>
+            <div class="rc-sub" style="margin-top:6px;"><i class="ti ti-cash"></i> $${Math.round(efecSemana).toLocaleString('es-AR')}</div>
+            <div class="rc-sub"><i class="ti ti-transfer"></i> $${Math.round(transSemana).toLocaleString('es-AR')}</div>
         </div>
         <div class="resumen-card">
-            <div class="rc-label">🗓 ${nombreMes}</div>
+            <div class="rc-label">${nombreMes}</div>
             <div class="rc-valor">$${Math.round(totalMes).toLocaleString('es-AR')}</div>
-            <div class="rc-sub">${ventasMes.length} venta${ventasMes.length !== 1 ? 's' : ''}</div>
-            <div class="rc-sub" style="margin-top:6px;">💵 $${Math.round(efectivoMes).toLocaleString('es-AR')}</div>
-            <div class="rc-sub">📲 $${Math.round(transferMes).toLocaleString('es-AR')}</div>
+            <div class="rc-sub">${vMes.length} venta${vMes.length !== 1 ? 's' : ''}</div>
+            <div class="rc-sub" style="margin-top:6px;"><i class="ti ti-cash"></i> $${Math.round(efecMes).toLocaleString('es-AR')}</div>
+            <div class="rc-sub"><i class="ti ti-transfer"></i> $${Math.round(transMes).toLocaleString('es-AR')}</div>
         </div>
     `;
 }
 
 // ================================================================
-// EXPORTAR HISTORIAL A EXCEL
+// EXPORTAR HISTORIAL
 // ================================================================
 function exportarHistorialExcel() {
     if (ventas.length === 0) { alert("No hay ventas para exportar."); return; }
-    let csv = "Fecha;Medio de Pago;Productos;Total\n";
+    let csv = "Fecha;Medio de Pago;Efectivo;Transferencia;Productos;Total\n";
     ventas.forEach(v => {
-        let itemsTexto = v.items.map(i => `${i.nombre} x${i.cantidad}`).join(' | ');
-        csv += `"${v.fechaLegible}";"${v.medioPago}";"${itemsTexto}";${v.total}\n`;
+        let efec  = v.medioPago === 'efectivo' ? v.total : (v.pagoDetalle ? v.pagoDetalle.efectivo : 0);
+        let trans = v.medioPago === 'transferencia' ? v.total : (v.pagoDetalle ? v.pagoDetalle.transferencia : 0);
+        let items = v.items.map(i => `${i.nombre} x${i.cantidad}`).join(' | ');
+        csv += `"${v.fechaLegible}";"${v.medioPago}";${efec};${trans};"${items}";${v.total}\n`;
     });
     descargarCSV(csv, `ventas_${fechaHoy()}.csv`);
 }
@@ -459,5 +768,5 @@ function refreshUI() {
 }
 window.onload = function () {
     refreshUI();
-    renderCarrito();
+    if (document.getElementById("carritoLista")) renderCarrito();
 };

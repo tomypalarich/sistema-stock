@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Sistema de Stock y Precios</title>
     <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/dist/tabler-icons.min.css">
 </head>
 <body>
 
@@ -14,43 +15,44 @@
             <i class="ti ti-package" aria-hidden="true"></i>
             Sistema de stock y precios
         </div>
-        <div class="topbar-sub">Librería</div>
+        <div class="topbar-sub">Libreria</div>
     </div>
 
-    <!-- PESTAÑAS -->
+    <!-- PESTANAS -->
     <div class="tabs">
         <button class="tab-btn active" onclick="showTab('tab-stock', this)">
-            <i class="ti ti-layout-list" aria-hidden="true"></i> Stock y precios
+            <i class="ti ti-layout-list"></i> Stock y precios
         </button>
         <button class="tab-btn" onclick="showTab('tab-ventas', this)">
-            <i class="ti ti-shopping-cart" aria-hidden="true"></i> Nueva venta
+            <i class="ti ti-shopping-cart"></i> Nueva venta
         </button>
         <button class="tab-btn" onclick="showTab('tab-historial', this)">
-            <i class="ti ti-clipboard-list" aria-hidden="true"></i> Historial
+            <i class="ti ti-clipboard-list"></i> Historial
         </button>
     </div>
 
-    <!-- ===== PESTAÑA 1: STOCK ===== -->
+    <!-- ===== PESTANA 1: STOCK ===== -->
     <div id="tab-stock" class="tab-content active">
         <div class="content">
 
-            <!-- DASHBOARD -->
             <div id="dashboard"></div>
 
-            <!-- TOOLBAR -->
             <div class="toolbar">
                 <div class="toolbar-left">
                     <div class="search-wrap">
-                        <i class="ti ti-search" aria-hidden="true"></i>
-                        <input type="text" id="searchBox" placeholder="Buscar producto o categoría..." onkeyup="searchProduct()">
+                        <i class="ti ti-search"></i>
+                        <input type="text" id="searchBox" placeholder="Buscar producto o categoria..." onkeyup="searchProduct()">
                     </div>
-                    <button class="btn" onclick="sortByName()"><i class="ti ti-arrows-sort" aria-hidden="true"></i> A–Z</button>
-                    <button class="btn" onclick="sortByPrice()"><i class="ti ti-sort-ascending-numbers" aria-hidden="true"></i> Por precio</button>
-                    <button class="btn" onclick="sortByStock()"><i class="ti ti-sort-ascending-numbers" aria-hidden="true"></i> Por stock</button>
-                    <button class="btn btn-export" onclick="exportToExcel()"><i class="ti ti-file-spreadsheet" aria-hidden="true"></i> Exportar</button>
-                    <button class="btn btn-danger-outline" onclick="clearAll()"><i class="ti ti-trash" aria-hidden="true"></i> Borrar todo</button>
+                    <button class="btn" onclick="sortByName()"><i class="ti ti-arrows-sort"></i> A-Z</button>
+                    <button class="btn" onclick="sortByPrice()"><i class="ti ti-sort-ascending-numbers"></i> Por precio</button>
+                    <button class="btn" onclick="sortByStock()"><i class="ti ti-sort-ascending-numbers"></i> Por stock</button>
+                    <button class="btn btn-export" onclick="exportToExcel()"><i class="ti ti-file-spreadsheet"></i> Exportar</button>
+                    <button class="btn btn-export" onclick="importarExcel()"><i class="ti ti-file-upload"></i> Importar Excel</button>
+                    <button class="btn btn-danger-outline" onclick="clearAll()"><i class="ti ti-trash"></i> Borrar todo</button>
+                    <!-- Input oculto para importar -->
+                    <input type="file" id="inputImportar" accept=".csv,.xlsx,.xls" style="display:none;" onchange="procesarImportacion(event)">
                 </div>
-                <button class="btn btn-primary" onclick="toggleFormulario()"><i class="ti ti-plus" aria-hidden="true"></i> Agregar producto</button>
+                <button class="btn btn-primary" onclick="toggleFormulario()"><i class="ti ti-plus"></i> Agregar producto</button>
             </div>
 
             <!-- FORMULARIO COLAPSABLE -->
@@ -58,7 +60,7 @@
                 <div class="form-panel">
                     <div class="form-panel-header">
                         <span id="formTitle">Agregar producto</span>
-                        <button class="btn-close" onclick="toggleFormulario()" aria-label="Cerrar"><i class="ti ti-x" aria-hidden="true"></i></button>
+                        <button class="btn-close" onclick="toggleFormulario()"><i class="ti ti-x"></i></button>
                     </div>
                     <div class="form-panel-body">
                         <div class="form-grid">
@@ -67,8 +69,8 @@
                                 <input type="text" id="productName" placeholder="Ej: Cuaderno tapa dura A4">
                             </div>
                             <div class="form-field">
-                                <label>Categoría</label>
-                                <input type="text" id="productCategory" placeholder="Ej: Cuadernos, Útiles">
+                                <label>Categoria</label>
+                                <input type="text" id="productCategory" placeholder="Ej: Cuadernos, Utiles">
                             </div>
                             <div class="form-field">
                                 <label>Precio de venta ($)</label>
@@ -83,16 +85,23 @@
                                 <input type="number" id="productQuantity" placeholder="0" min="0">
                             </div>
                             <div class="form-field">
-                                <label>Stock mínimo (alerta)</label>
+                                <label>Stock minimo (alerta)</label>
                                 <input type="number" id="productMinStock" placeholder="5" min="0">
                             </div>
                         </div>
                         <div class="form-actions">
-                            <button class="btn btn-primary" onclick="addProduct()"><i class="ti ti-device-floppy" aria-hidden="true"></i> Guardar producto</button>
-                            <button class="btn" onclick="cancelEdit()" id="btnCancelar" style="display:none;"><i class="ti ti-x" aria-hidden="true"></i> Cancelar edición</button>
+                            <button class="btn btn-primary" onclick="addProduct()"><i class="ti ti-device-floppy"></i> Guardar producto</button>
+                            <button class="btn" onclick="cancelEdit()" id="btnCancelar" style="display:none;"><i class="ti ti-x"></i> Cancelar edicion</button>
                         </div>
                     </div>
                 </div>
+            </div>
+
+            <!-- NOTA IMPORTACION -->
+            <div id="notaImportacion" class="nota-info" style="display:none;">
+                <i class="ti ti-info-circle"></i>
+                <span>El archivo CSV debe tener columnas: <b>Nombre</b>, <b>Precio Venta</b> y opcionalmente: Categoria, Precio Costo, Stock, Stock Minimo. Si el producto ya existe se actualiza.</span>
+                <button class="btn-close" onclick="this.parentElement.style.display='none'"><i class="ti ti-x"></i></button>
             </div>
 
             <!-- TABLA -->
@@ -101,7 +110,7 @@
                     <thead>
                         <tr>
                             <th>Producto</th>
-                            <th>Categoría</th>
+                            <th>Categoria</th>
                             <th>Precio venta</th>
                             <th>Precio costo</th>
                             <th>Stock</th>
@@ -112,19 +121,18 @@
                     <tbody id="productList"></tbody>
                 </table>
             </div>
-
         </div>
     </div>
 
-    <!-- ===== PESTAÑA 2: NUEVA VENTA ===== -->
+    <!-- ===== PESTANA 2: NUEVA VENTA ===== -->
     <div id="tab-ventas" class="tab-content">
         <div class="content">
             <div class="panel">
-                <div class="panel-header"><i class="ti ti-shopping-cart" aria-hidden="true"></i> Nueva venta</div>
+                <div class="panel-header"><i class="ti ti-shopping-cart"></i> Nueva venta</div>
                 <div class="panel-body">
                     <div class="form-field" style="margin-bottom:8px;">
                         <label>Buscar producto</label>
-                        <input type="text" id="ventaSearch" placeholder="Escribí el nombre o categoría..." oninput="ventaFiltrar()" style="width:100%; max-width:100%;">
+                        <input type="text" id="ventaSearch" placeholder="Escribi el nombre o categoria..." oninput="ventaFiltrar()" style="width:100%; max-width:100%;">
                     </div>
                     <div id="ventaSugerencias"></div>
 
@@ -137,30 +145,53 @@
                     <div style="margin-top:20px;">
                         <div class="section-label">Medio de pago</div>
                         <div class="radio-group">
-                            <label class="radio-opt"><input type="radio" name="medioPago" value="efectivo" checked> <i class="ti ti-cash" aria-hidden="true"></i> Efectivo</label>
-                            <label class="radio-opt"><input type="radio" name="medioPago" value="transferencia"> <i class="ti ti-transfer" aria-hidden="true"></i> Transferencia</label>
+                            <label class="radio-opt">
+                                <input type="radio" name="medioPago" value="efectivo" checked onchange="onMedioPagoChange()">
+                                <i class="ti ti-cash"></i> Efectivo
+                            </label>
+                            <label class="radio-opt">
+                                <input type="radio" name="medioPago" value="transferencia" onchange="onMedioPagoChange()">
+                                <i class="ti ti-transfer"></i> Transferencia
+                            </label>
+                            <label class="radio-opt">
+                                <input type="radio" name="medioPago" value="mixto" onchange="onMedioPagoChange()">
+                                <i class="ti ti-arrows-exchange"></i> Mixto
+                            </label>
+                        </div>
+
+                        <!-- PANEL PAGO MIXTO -->
+                        <div id="pagoMixtoPanel" style="display:none; margin-top:12px;">
+                            <div class="mixto-panel">
+                                <div class="form-field">
+                                    <label><i class="ti ti-cash"></i> Monto en efectivo ($)</label>
+                                    <input type="number" id="pagoEfectivo" placeholder="0" min="0" oninput="onEfectivoInput()">
+                                </div>
+                                <div class="mixto-flecha"><i class="ti ti-plus"></i></div>
+                                <div class="form-field">
+                                    <label><i class="ti ti-transfer"></i> Transferencia (restante)</label>
+                                    <div class="mixto-auto" id="pagoTransferenciaAuto">$0</div>
+                                </div>
+                            </div>
                         </div>
                     </div>
 
                     <div class="form-actions" style="margin-top:20px;">
-                        <button class="btn btn-primary" onclick="confirmarVenta()" style="flex:1;justify-content:center;padding:12px;"><i class="ti ti-check" aria-hidden="true"></i> Confirmar venta</button>
-                        <button class="btn" onclick="limpiarCarrito()"><i class="ti ti-trash" aria-hidden="true"></i> Vaciar</button>
+                        <button class="btn btn-primary" onclick="confirmarVenta()" style="flex:1;justify-content:center;padding:12px;"><i class="ti ti-check"></i> Confirmar venta</button>
+                        <button class="btn" onclick="limpiarCarrito()"><i class="ti ti-trash"></i> Vaciar</button>
                     </div>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- ===== PESTAÑA 3: HISTORIAL ===== -->
+    <!-- ===== PESTANA 3: HISTORIAL ===== -->
     <div id="tab-historial" class="tab-content">
         <div class="content">
-
             <div id="resumenVentas"></div>
-
             <div class="panel" style="margin-bottom:20px;">
-                <div class="panel-header"><i class="ti ti-filter" aria-hidden="true"></i> Filtrar historial</div>
+                <div class="panel-header"><i class="ti ti-filter"></i> Filtrar historial</div>
                 <div class="panel-body">
-                    <div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap;">
+                    <div style="display:flex; align-items:flex-end; gap:12px; flex-wrap:wrap;">
                         <div class="form-field" style="margin:0;">
                             <label>Desde</label>
                             <input type="date" id="filtroDesde" style="width:160px;">
@@ -169,20 +200,18 @@
                             <label>Hasta</label>
                             <input type="date" id="filtroHasta" style="width:160px;">
                         </div>
-                        <div style="display:flex; gap:8px; margin-top:18px;">
-                            <button class="btn btn-primary" onclick="filtrarHistorial()"><i class="ti ti-filter" aria-hidden="true"></i> Filtrar</button>
+                        <div style="display:flex; gap:8px;">
+                            <button class="btn btn-primary" onclick="filtrarHistorial()"><i class="ti ti-filter"></i> Filtrar</button>
                             <button class="btn" onclick="mostrarTodoHistorial()">Ver todo</button>
-                            <button class="btn btn-export" onclick="exportarHistorialExcel()"><i class="ti ti-file-spreadsheet" aria-hidden="true"></i> Exportar</button>
+                            <button class="btn btn-export" onclick="exportarHistorialExcel()"><i class="ti ti-file-spreadsheet"></i> Exportar</button>
                         </div>
                     </div>
                 </div>
             </div>
-
             <div id="historialLista"></div>
         </div>
     </div>
 
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/dist/tabler-icons.min.css">
     <script src="script.js"></script>
 </body>
 </html>

@@ -381,3 +381,149 @@ echo "OK"
 Salida
 
 OK
+
+/* ===== PAGO MIXTO ===== */
+.mixto-panel {
+    display: flex;
+    align-items: flex-end;
+    gap: 12px;
+    background: #f5f8ff;
+    border: 1px solid #c5d5f0;
+    border-radius: 8px;
+    padding: 14px;
+    flex-wrap: wrap;
+}
+.mixto-flecha {
+    font-size: 18px;
+    color: #7a8aaa;
+    padding-bottom: 8px;
+    flex-shrink: 0;
+}
+.mixto-auto {
+    background: #eef3ff;
+    border: 1px solid #c5d5f0;
+    border-radius: 6px;
+    padding: 8px 12px;
+    font-size: 15px;
+    font-weight: 600;
+    color: #2d5fc4;
+    min-width: 120px;
+}
+
+/* ===== CARRITO MEJORADO ===== */
+.carrito-total-line {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 15px;
+    font-weight: 600;
+    color: #1e2535;
+    padding: 10px 0 0;
+}
+.carrito-total-line span { color: #2d5fc4; font-size: 18px; }
+.btn-quitar { margin-left: auto; flex-shrink: 0; }
+
+/* ===== VENTA CARD MEJORADA ===== */
+.venta-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+.venta-fecha { font-weight: 600; font-size: 13px; color: #1e2535; }
+.venta-acciones { display: flex; gap: 6px; }
+.venta-items {
+    color: #7a8aaa;
+    padding-left: 16px;
+    margin: 6px 0;
+    font-size: 13px;
+}
+.venta-items li { margin: 2px 0; }
+.venta-total {
+    font-weight: 600;
+    font-size: 13px;
+    color: #1e2535;
+    margin-top: 8px;
+    padding-top: 8px;
+    border-top: 1px solid #eef1f6;
+}
+.venta-mixto-detalle {
+    display: flex;
+    gap: 16px;
+    font-size: 12px;
+    color: #7a8aaa;
+    margin: 6px 0;
+    flex-wrap: wrap;
+}
+.venta-mixto-detalle i { font-size: 12px; }
+.tag-mixto { background: #f5f0ff; color: #7c3aed; border: 1px solid #ddd0f8; }
+.btn-sm { padding: 4px 9px; font-size: 12px; }
+
+/* ===== MODAL EDITAR VENTA ===== */
+.modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.35);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    padding: 20px;
+}
+.modal-box {
+    background: #ffffff;
+    border-radius: 10px;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.18);
+    width: 100%;
+    max-width: 420px;
+    overflow: hidden;
+}
+.modal-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 18px;
+    border-bottom: 1px solid #dde3ee;
+    font-weight: 600;
+    font-size: 14px;
+    background: linear-gradient(to right, #f5f8ff, #f0f4f8);
+}
+.modal-body { padding: 18px; }
+.modal-footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+    padding: 14px 18px;
+    border-top: 1px solid #dde3ee;
+    background: #f8fafc;
+}
+.select-input {
+    background: #ffffff;
+    border: 1px solid #cdd4e0;
+    border-radius: 6px;
+    color: #1e2535;
+    padding: 8px 12px;
+    font-size: 13px;
+    outline: none;
+    width: 100%;
+    cursor: pointer;
+}
+.select-input:focus { border-color: #2d5fc4; box-shadow: 0 0 0 3px rgba(45,95,196,0.1); }
+
+/* ===== NOTA IMPORTACION ===== */
+.nota-info {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    background: #eef3ff;
+    border: 1px solid #c5d5f0;
+    border-radius: 8px;
+    padding: 12px 14px;
+    margin-bottom: 14px;
+    font-size: 12px;
+    color: #3a4a6a;
+}
+.nota-info i { font-size: 15px; color: #2d5fc4; flex-shrink: 0; margin-top: 1px; }
+.nota-info span { flex: 1; line-height: 1.5; }
