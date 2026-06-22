@@ -1,6 +1,3 @@
-bash
-
-cat > /home/claude/style.css << 'EOF'
 /* ===== RESET ===== */
 * { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -31,7 +28,7 @@ body {
     letter-spacing: 0.2px;
 }
 .topbar-title i { font-size: 17px; color: #7b9fd4; }
-.topbar-sub { font-size: 11px; color: #7b9fd4; font-weight: 500; }
+.topbar-sub { font-size: 11px; color: #7b9fd4; font-weight: 500; display:flex; align-items:center; gap:5px; }
 
 /* ===== PESTANAS ===== */
 .tabs {
@@ -369,19 +366,6 @@ td.sin-stock  { color: #e5534b; font-weight: 500; }
 .tag-efectivo      { background: #e8f8f0; color: #22a06b; border: 1px solid #b3dfc9; }
 .tag-transferencia { background: #eef3ff; color: #2d5fc4; border: 1px solid #b3c8f0; }
 
-/* ===== RESPONSIVE ===== */
-@media (max-width: 600px) {
-    .content { padding: 14px; }
-    .toolbar { flex-direction: column; align-items: flex-start; }
-    .toolbar .btn-primary { width: 100%; justify-content: center; }
-    .search-wrap input { width: 100%; }
-}
-EOF
-echo "OK"
-Salida
-
-OK
-
 /* ===== PAGO MIXTO ===== */
 .mixto-panel {
     display: flex;
@@ -527,3 +511,11 @@ OK
 }
 .nota-info i { font-size: 15px; color: #2d5fc4; flex-shrink: 0; margin-top: 1px; }
 .nota-info span { flex: 1; line-height: 1.5; }
+
+/* ===== RESPONSIVE ===== */
+@media (max-width: 600px) {
+    .content { padding: 14px; }
+    .toolbar { flex-direction: column; align-items: flex-start; }
+    .toolbar .btn-primary { width: 100%; justify-content: center; }
+    .search-wrap input { width: 100%; }
+}

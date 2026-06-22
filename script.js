@@ -1,10 +1,57 @@
 // ================================================================
-// DATOS - todo se guarda en localStorage del navegador
+// DATOS - ahora viven en Firebase Firestore (antes: localStorage)
 // ================================================================
-let products = JSON.parse(localStorage.getItem("productos")) || [];
-let ventas   = JSON.parse(localStorage.getItem("ventas"))    || [];
+let products = [];
+let ventas   = [];
 let editIndex = -1;
 let carrito = [];
+
+// Referencias a las colecciones de Firestore
+const productosRef = db.collection("productos");
+const ventasRef     = db.collection("ventas");
+
+// Bandera para saber si ya cargamos los datos por primera vez
+let productosListos = false;
+let ventasListos     = false;
+
+function marcarConectado() {
+    let estado = document.getElementById("syncStatus");
+    if (estado) estado.innerHTML = '<i class="ti ti-cloud-check"></i> Conectado';
+}
+function marcarError() {
+    let estado = document.getElementById("syncStatus");
+    if (estado) estado.innerHTML = '<i class="ti ti-cloud-off"></i> Sin conexion';
+}
+
+// Escuchar cambios en tiempo real de la coleccion "productos"
+productosRef.orderBy("name").onSnapshot(
+    (snapshot) => {
+        products = snapshot.docs.map(doc => ({ ...doc.data(), firebaseId: doc.id, id: doc.data().id || doc.id }));
+        productosListos = true;
+        marcarConectado();
+        refreshUI();
+    },
+    (error) => {
+        console.error("Error leyendo productos:", error);
+        marcarError();
+    }
+);
+
+// Escuchar cambios en tiempo real de la coleccion "ventas"
+ventasRef.orderBy("fecha").onSnapshot(
+    (snapshot) => {
+        ventas = snapshot.docs.map(doc => ({ ...doc.data(), firebaseId: doc.id }));
+        ventasListos = true;
+        marcarConectado();
+        if (document.getElementById("tab-historial")?.classList.contains("active")) {
+            mostrarTodoHistorial();
+        }
+    },
+    (error) => {
+        console.error("Error leyendo ventas:", error);
+        marcarError();
+    }
+);
 
 // ================================================================
 // PESTANAS
@@ -18,15 +65,68 @@ function showTab(id, btn) {
 }
 
 // ================================================================
-// GUARDAR DATOS
+// GUARDAR DATOS EN FIRESTORE
 // ================================================================
-function saveData()   { localStorage.setItem("productos", JSON.stringify(products)); }
-function saveVentas() { localStorage.setItem("ventas",    JSON.stringify(ventas));   }
+// Ya no guardamos "todo el array de una vez": cada producto y cada
+// venta es un documento separado en Firestore. Estas funciones
+// reemplazan los antiguos saveData()/saveVentas() basados en localStorage.
+
+async function guardarProducto(producto) {
+    try {
+        if (producto.firebaseId) {
+            // Ya existe en Firestore: actualizar ese documento
+            await productosRef.doc(producto.firebaseId).set(producto);
+        } else {
+            // Es nuevo: crear documento nuevo
+            await productosRef.add(producto);
+        }
+    } catch (e) {
+        console.error("Error guardando producto:", e);
+        alert("No se pudo guardar en la base de datos. Revisa tu conexion a internet.");
+    }
+}
+
+async function borrarProductoFirebase(firebaseId) {
+    try {
+        await productosRef.doc(firebaseId).delete();
+    } catch (e) {
+        console.error("Error borrando producto:", e);
+        alert("No se pudo eliminar. Revisa tu conexion a internet.");
+    }
+}
+
+async function guardarVenta(venta) {
+    try {
+        if (venta.firebaseId) {
+            await ventasRef.doc(venta.firebaseId).set(venta);
+        } else {
+            await ventasRef.add(venta);
+        }
+    } catch (e) {
+        console.error("Error guardando venta:", e);
+        alert("No se pudo registrar la venta. Revisa tu conexion a internet.");
+    }
+}
+
+async function borrarVentaFirebase(firebaseId) {
+    try {
+        await ventasRef.doc(firebaseId).delete();
+    } catch (e) {
+        console.error("Error borrando venta:", e);
+        alert("No se pudo eliminar la venta. Revisa tu conexion a internet.");
+    }
+}
+
+// Compatibilidad: estas dos funciones ya no hacen falta porque cada
+// cambio se guarda al instante con las funciones de arriba, pero las
+// dejamos vacias por si quedo alguna llamada suelta en el codigo.
+function saveData()   {}
+function saveVentas() {}
 
 // ================================================================
 // AGREGAR / ACTUALIZAR PRODUCTO
 // ================================================================
-function addProduct() {
+async function addProduct() {
     let name      = document.getElementById("productName").value.trim();
     let priceSale = parseFloat(document.getElementById("productPriceSale").value);
     let priceCost = parseFloat(document.getElementById("productPriceCost").value);
@@ -47,18 +147,18 @@ function addProduct() {
     };
 
     if (editIndex >= 0) {
+        // Mantener el mismo id y el firebaseId del producto que se esta editando
         product.id = products[editIndex].id;
-        products[editIndex] = product;
+        product.firebaseId = products[editIndex].firebaseId;
         editIndex = -1;
         document.getElementById("formTitle").textContent = "Agregar producto";
         document.getElementById("btnCancelar").style.display = "none";
-    } else {
-        products.push(product);
     }
 
-    saveData();
+    await guardarProducto(product);
+    // No hace falta llamar a refreshUI() aca: el listener en tiempo real
+    // de Firestore se encarga de refrescar la tabla solo.
     clearInputs();
-    refreshUI();
 }
 
 // ================================================================
@@ -139,11 +239,9 @@ function editProduct(index) {
     document.getElementById("formContainer").style.display = "block";
     window.scrollTo({ top: 0, behavior: 'smooth' });
 }
-function deleteProduct(index) {
+async function deleteProduct(index) {
     if (!confirm(`Eliminar "${products[index].name}"?`)) return;
-    products.splice(index, 1);
-    saveData();
-    refreshUI();
+    await borrarProductoFirebase(products[index].firebaseId);
 }
 
 // ================================================================
@@ -154,12 +252,19 @@ function searchProduct() {
     displayProducts(products.filter(p =>
         p.name.toLowerCase().includes(q) || p.category.toLowerCase().includes(q)));
 }
-function sortByName()  { products.sort((a,b) => a.name.localeCompare(b.name, 'es')); saveData(); refreshUI(); }
-function sortByPrice() { products.sort((a,b) => a.priceSale - b.priceSale); saveData(); refreshUI(); }
-function sortByStock() { products.sort((a,b) => a.quantity - b.quantity); saveData(); refreshUI(); }
-function clearAll() {
-    if (!confirm("Borrar TODOS los productos?")) return;
-    products = []; saveData(); refreshUI();
+function sortByName()  { products.sort((a,b) => a.name.localeCompare(b.name, 'es')); displayProducts(); }
+function sortByPrice() { products.sort((a,b) => a.priceSale - b.priceSale); displayProducts(); }
+function sortByStock() { products.sort((a,b) => a.quantity - b.quantity); displayProducts(); }
+async function clearAll() {
+    if (!confirm("Borrar TODOS los productos? Esta accion no se puede deshacer.")) return;
+    let lote = db.batch();
+    products.forEach(p => lote.delete(productosRef.doc(p.firebaseId)));
+    try {
+        await lote.commit();
+    } catch (e) {
+        console.error("Error borrando todo:", e);
+        alert("No se pudo borrar todo. Revisa tu conexion.");
+    }
 }
 
 // ================================================================
@@ -205,7 +310,7 @@ function procesarImportacion(event) {
     if (!file) return;
 
     let reader = new FileReader();
-    reader.onload = function(e) {
+    reader.onload = async function(e) {
         let texto = e.target.result;
         // Detectar separador: punto y coma o coma
         let separador = texto.includes(';') ? ';' : ',';
@@ -234,6 +339,8 @@ function procesarImportacion(event) {
 
         let importados = 0;
         let errores = 0;
+        let lote = db.batch();
+        let operacionesEnLote = 0;
 
         for (let i = 1; i < lineas.length; i++) {
             // Parsear respetando comillas
@@ -253,13 +360,19 @@ function procesarImportacion(event) {
             // Si ya existe el producto (mismo nombre), actualiza; si no, agrega
             let existente = products.find(p => p.name.toLowerCase() === nombre.toLowerCase());
             if (existente) {
-                existente.priceSale = priceSale || existente.priceSale;
-                existente.priceCost = isNaN(priceCost) ? existente.priceCost : priceCost;
-                existente.quantity  = isNaN(quantity)  ? existente.quantity  : quantity;
-                existente.minStock  = isNaN(minStock)  ? existente.minStock  : minStock;
-                existente.category  = category || existente.category;
+                let actualizado = {
+                    ...existente,
+                    priceSale: priceSale || existente.priceSale,
+                    priceCost: isNaN(priceCost) ? existente.priceCost : priceCost,
+                    quantity:  isNaN(quantity)  ? existente.quantity  : quantity,
+                    minStock:  isNaN(minStock)  ? existente.minStock  : minStock,
+                    category:  category || existente.category
+                };
+                delete actualizado.firebaseId;
+                lote.set(productosRef.doc(existente.firebaseId), actualizado);
             } else {
-                products.push({
+                let nuevoDoc = productosRef.doc(); // genera un ID nuevo
+                lote.set(nuevoDoc, {
                     id: Date.now() + i,
                     name: nombre,
                     priceSale: priceSale || 0,
@@ -270,15 +383,26 @@ function procesarImportacion(event) {
                 });
             }
             importados++;
+            operacionesEnLote++;
+
+            // Firestore permite maximo 500 operaciones por lote
+            if (operacionesEnLote >= 450) {
+                await lote.commit();
+                lote = db.batch();
+                operacionesEnLote = 0;
+            }
         }
 
-        saveData();
-        refreshUI();
-        event.target.value = "";
-
-        let msg = `Importacion completada.\n${importados} producto${importados !== 1 ? 's' : ''} importado${importados !== 1 ? 's' : ''}.`;
-        if (errores > 0) msg += `\n${errores} fila${errores !== 1 ? 's' : ''} con error ignorada${errores !== 1 ? 's' : ''}.`;
-        alert(msg);
+        try {
+            if (operacionesEnLote > 0) await lote.commit();
+            event.target.value = "";
+            let msg = `Importacion completada.\n${importados} producto${importados !== 1 ? 's' : ''} importado${importados !== 1 ? 's' : ''}.`;
+            if (errores > 0) msg += `\n${errores} fila${errores !== 1 ? 's' : ''} con error ignorada${errores !== 1 ? 's' : ''}.`;
+            alert(msg);
+        } catch (err) {
+            console.error("Error importando:", err);
+            alert("Hubo un error guardando los datos en la base. Revisa tu conexion e intenta de nuevo.");
+        }
     };
     reader.readAsText(file, 'UTF-8');
 }
@@ -417,7 +541,7 @@ function onEfectivoInput() {
     actualizarPagoMixto(total);
 }
 
-function confirmarVenta() {
+async function confirmarVenta() {
     if (carrito.length === 0) { alert("El carrito esta vacio."); return; }
 
     for (let item of carrito) {
@@ -456,21 +580,32 @@ function confirmarVenta() {
         total,
         items: carrito.map(c => ({ nombre: c.nombre, precio: c.precio, cantidad: c.cantidad }))
     };
-    ventas.push(venta);
-    saveVentas();
 
-    carrito.forEach(item => {
-        let prod = products.find(p => p.id === item.id);
-        if (prod) prod.quantity -= item.cantidad;
-    });
-    saveData();
+    // Guardar la venta y descontar el stock en un solo lote
+    // (asi se hace todo junto o no se hace nada si falla la conexion)
+    try {
+        let lote = db.batch();
+        lote.set(ventasRef.doc(), venta);
+        carrito.forEach(item => {
+            let prod = products.find(p => p.id === item.id);
+            if (prod) {
+                lote.update(productosRef.doc(prod.firebaseId), {
+                    quantity: prod.quantity - item.cantidad
+                });
+            }
+        });
+        await lote.commit();
+    } catch (e) {
+        console.error("Error registrando la venta:", e);
+        alert("No se pudo registrar la venta. Revisa tu conexion a internet e intenta de nuevo.");
+        return;
+    }
 
     carrito = [];
     renderCarrito();
     document.getElementById("pagoEfectivo") && (document.getElementById("pagoEfectivo").value = "");
     document.getElementById("pagoMixtoPanel").style.display = "none";
     document.querySelector('input[name="medioPago"][value="efectivo"]').checked = true;
-    refreshUI();
 
     let msgPago = tipo === 'mixto'
         ? `Efectivo: $${pagoDetalle.efectivo.toLocaleString('es-AR')} / Transferencia: $${pagoDetalle.transferencia.toLocaleString('es-AR')}`
@@ -561,20 +696,29 @@ function renderHistorial(data) {
 // ================================================================
 // EDITAR / ELIMINAR VENTAS
 // ================================================================
-function eliminarVenta(index) {
+async function eliminarVenta(index) {
     let v = ventas[index];
     if (!confirm(`Eliminar la venta del ${v.fechaLegible} por $${v.total.toLocaleString('es-AR')}?`)) return;
 
-    // Devolver stock
-    v.items.forEach(item => {
-        let prod = products.find(p => p.name === item.nombre);
-        if (prod) prod.quantity += item.cantidad;
-    });
+    try {
+        let lote = db.batch();
+        lote.delete(ventasRef.doc(v.firebaseId));
+        // Devolver el stock de cada producto vendido
+        v.items.forEach(item => {
+            let prod = products.find(p => p.name === item.nombre);
+            if (prod) {
+                lote.update(productosRef.doc(prod.firebaseId), {
+                    quantity: prod.quantity + item.cantidad
+                });
+            }
+        });
+        await lote.commit();
+    } catch (e) {
+        console.error("Error eliminando venta:", e);
+        alert("No se pudo eliminar la venta. Revisa tu conexion.");
+        return;
+    }
 
-    ventas.splice(index, 1);
-    saveVentas();
-    saveData();
-    refreshUI();
     renderHistorial(ventas);
     renderResumenVentas(ventas);
 }
@@ -649,7 +793,7 @@ function onEditMixtoInput(total) {
     document.getElementById("editTransferencia").value = Math.max(0, total - efec);
 }
 
-function guardarEdicionVenta(index, total) {
+async function guardarEdicionVenta(index, total) {
     let tipo = document.getElementById("editMedioPago").value;
     let pagoDetalle = null;
 
@@ -663,9 +807,18 @@ function guardarEdicionVenta(index, total) {
         pagoDetalle = { efectivo: efec, transferencia: trans };
     }
 
-    ventas[index].medioPago   = tipo;
-    ventas[index].pagoDetalle = pagoDetalle;
-    saveVentas();
+    let v = ventas[index];
+    try {
+        await ventasRef.doc(v.firebaseId).update({
+            medioPago: tipo,
+            pagoDetalle: pagoDetalle
+        });
+    } catch (e) {
+        console.error("Error guardando edicion de venta:", e);
+        alert("No se pudo guardar el cambio. Revisa tu conexion.");
+        return;
+    }
+
     cerrarModal();
     renderHistorial(ventas);
     renderResumenVentas(ventas);
@@ -766,7 +919,12 @@ function refreshUI() {
     displayProducts();
     updateDashboard();
 }
+// ================================================================
+// INICIO
+// ================================================================
+// Ya no hace falta llamar a refreshUI() aca: los listeners en tiempo
+// real de Firestore (mas arriba en el archivo) se disparan solos en
+// cuanto cargan los datos, incluso la primera vez.
 window.onload = function () {
-    refreshUI();
     if (document.getElementById("carritoLista")) renderCarrito();
 };
